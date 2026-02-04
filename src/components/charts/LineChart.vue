@@ -1,0 +1,205 @@
+<script setup lang="ts">
+/**
+ * LineChart component
+ * Supports markers, step interpolation, and missing value handling
+ */
+
+import { computed, ref } from 'vue';
+import type { EChartsOption } from 'echarts';
+import type { LineChartProps, SeriesConfig } from '../../types';
+import EChartsBase from '../core/EChartsBase.vue';
+import ChartFooter from '../core/ChartFooter.vue';
+import { useChartConfig, getSeriesConfig } from '../../composables/useChartConfig';
+import { useThemeStores } from '../../composables/useTheme';
+import { formatValue } from '../../utils/formatting';
+
+const props = withDefaults(defineProps<LineChartProps>(), {
+  lineType: 'solid',
+  lineOpacity: 1,
+  lineWidth: 2,
+  markers: false,
+  markerShape: 'circle',
+  markerSize: 8,
+  handleMissing: 'gap',
+  step: false,
+  stepPosition: 'middle',
+  xBaseline: true,
+  yGridlines: true,
+  xAxisLabels: true,
+  yAxisLabels: true,
+  downloadableData: true,
+  downloadableImage: true
+});
+
+const emit = defineEmits<{
+  (e: 'click', params: unknown): void;
+}>();
+
+const { activeAppearance, resolveColor, resolveColorPalette, resolveColorsObject } = useThemeStores();
+
+// Process chart configuration
+const {
+  processedData,
+  columnSummary,
+  xAxisType: _xAxisType,
+  baseConfig,
+  formats,
+  unitSummaries
+} = useChartConfig({
+  ...props,
+  chartType: 'Line Chart'
+});
+
+// Resolve colors
+const lineColorResolved = computed(() =>
+  props.lineColor ? resolveColor(props.lineColor).value : undefined
+);
+const labelColorResolved = computed(() =>
+  props.labelColor ? resolveColor(props.labelColor).value : undefined
+);
+const colorPaletteResolved = computed(() =>
+  resolveColorPalette(props.colorPalette || 'default').value
+);
+const seriesColorsResolved = computed(() =>
+  props.seriesColors ? resolveColorsObject(props.seriesColors).value : undefined
+);
+
+// Map line type to ECharts format
+const lineTypeMap = {
+  solid: 'solid',
+  dashed: 'dashed',
+  dotted: 'dotted'
+} as const;
+
+// Map step position
+const stepMap = {
+  start: 'start',
+  middle: 'middle',
+  end: 'end'
+} as const;
+
+// Build line series configuration
+const lineSeriesConfig = computed<Partial<SeriesConfig>>(() => {
+  return {
+    type: 'line',
+    smooth: false,
+    step: props.step ? stepMap[props.stepPosition || 'middle'] : false,
+    connectNulls: props.handleMissing === 'connect',
+    lineStyle: {
+      color: lineColorResolved.value,
+      width: props.lineWidth,
+      opacity: props.lineOpacity,
+      type: lineTypeMap[props.lineType || 'solid']
+    },
+    itemStyle: {
+      color: lineColorResolved.value
+    },
+    symbol: props.markers ? props.markerShape : 'none',
+    symbolSize: props.markers ? props.markerSize : 0,
+    label: props.labels ? {
+      show: true,
+      position: props.labelPosition || 'top',
+      fontSize: props.labelSize || 11,
+      color: labelColorResolved.value,
+      formatter: (params: { value: unknown[] }) => {
+        const value = params.value[1];
+        if (props.labelFmt || props.yLabelFmt) {
+          return formatValue(value, formats.value.y, unitSummaries.value.y);
+        }
+        return String(value);
+      }
+    } : undefined,
+    emphasis: {
+      focus: 'series',
+      lineStyle: {
+        width: (props.lineWidth || 2) + 1
+      }
+    }
+  };
+});
+
+// Generate series
+const seriesData = computed(() => {
+  if (!props.x || !props.y) return [];
+
+  let data = processedData.value;
+
+  // Handle missing values
+  if (props.handleMissing === 'zero') {
+    const yColumns = Array.isArray(props.y) ? props.y : [props.y];
+    data = data.map((row) => {
+      const newRow = { ...row };
+      for (const col of yColumns) {
+        if (newRow[col] == null) {
+          newRow[col] = 0;
+        }
+      }
+      return newRow;
+    });
+  }
+
+  return getSeriesConfig(
+    data,
+    props.x,
+    props.y,
+    props.series,
+    false,
+    lineSeriesConfig.value,
+    columnSummary.value,
+    {
+      y2: props.y2,
+      seriesOrder: props.seriesOrder
+    }
+  );
+});
+
+// Build final config
+const chartConfig = computed<EChartsOption>(() => {
+  const config = { ...baseConfig.value };
+
+  // Update series
+  config.series = seriesData.value as EChartsOption['series'];
+
+  // Update color palette
+  if (colorPaletteResolved.value) {
+    config.color = colorPaletteResolved.value;
+  }
+
+  return config;
+});
+
+const hovering = ref(false);
+</script>
+
+<template>
+  <EChartsBase
+    :config="chartConfig"
+    :height="props.height"
+    :width="props.width"
+    :theme="activeAppearance"
+    :renderer="props.renderer"
+    :connect-group="props.connectGroup"
+    :series-colors="seriesColorsResolved as Record<string, string>"
+    :echarts-options="props.echartsOptions"
+    :series-options="props.seriesOptions"
+    :show-all-x-axis-labels="props.showAllXAxisLabels"
+    @click="emit('click', $event)"
+    @mouseenter="hovering = true"
+    @mouseleave="hovering = false"
+  >
+    <template #footer>
+      <ChartFooter
+        :config="chartConfig"
+        :data="processedData"
+        :chart-title="props.title"
+        :theme="activeAppearance"
+        :series-colors="seriesColorsResolved as Record<string, string>"
+        :echarts-options="props.echartsOptions"
+        :series-options="props.seriesOptions"
+        :downloadable-data="props.downloadableData"
+        :downloadable-image="props.downloadableImage"
+        :visible="hovering"
+      />
+    </template>
+  </EChartsBase>
+</template>
