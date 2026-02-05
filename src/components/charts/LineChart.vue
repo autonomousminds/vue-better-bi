@@ -29,7 +29,8 @@ const props = withDefaults(defineProps<LineChartProps>(), {
   xAxisLabels: true,
   yAxisLabels: true,
   downloadableData: true,
-  downloadableImage: true
+  downloadableImage: true,
+  legendPosition: 'top'
 });
 
 const emit = defineEmits<{
@@ -214,17 +215,6 @@ const chartConfig = computed<EChartsOption>(() => {
   if (tooltipBase && Object.keys(tooltipBase).length > 0) {
     config.tooltip = { ...(config.tooltip as Record<string, unknown>), ...tooltipBase } as EChartsOption['tooltip'];
   }
-
-  // Debug logging
-  console.log('[LineChart] Final config:', {
-    xAxis: config.xAxis,
-    xAxisName: (config.xAxis as Record<string, unknown>)?.name,
-    legend: config.legend,
-    legendShow: (config.legend as Record<string, unknown>)?.show,
-    seriesCount: Array.isArray(config.series) ? config.series.length : 0,
-    seriesNames: Array.isArray(config.series) ? (config.series as Array<{ name?: unknown }>).map((s) => String(s.name || '')) : [],
-    grid: config.grid
-  });
 
   return config;
 });

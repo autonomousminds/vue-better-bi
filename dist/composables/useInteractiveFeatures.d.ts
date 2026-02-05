@@ -13,7 +13,7 @@ export interface InteractiveFeaturesOptions {
 }
 export interface UseInteractiveFeaturesReturn {
     dataZoomConfig: ComputedRef<EChartsOption['dataZoom']>;
-    toolboxConfig: ComputedRef<Record<string, unknown> | undefined>;
+    toolboxConfig: ComputedRef<Record<string, unknown>>;
     brushConfig: ComputedRef<Record<string, unknown> | undefined>;
     animationConfig: ComputedRef<Partial<EChartsOption>>;
     tooltipBaseConfig: ComputedRef<Record<string, unknown>>;

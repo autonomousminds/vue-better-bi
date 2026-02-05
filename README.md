@@ -175,9 +175,65 @@ configureThemes({
 | `description` | `string` | Description text displayed below the subtitle |
 | `height` | `string` | Chart height (default: '291px') |
 | `width` | `string` | Chart width (default: '100%') |
-| `legend` | `boolean` | Show legend |
+| `legend` | `boolean` | Show legend (auto-enabled when multiple series) |
+| `legendPosition` | `'top' \| 'bottom' \| 'left' \| 'right'` | Legend position (default: 'top') |
 | `yFmt` | `string` | Y-axis value format |
 | `xFmt` | `string` | X-axis value format |
+
+### Axis Labels Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `xAxisLabels` | `boolean` | `true` | Show X-axis labels |
+| `yAxisLabels` | `boolean` | `true` | Show Y-axis labels |
+| `xAxisTitle` | `string \| boolean` | - | X-axis title. Use `true` for auto-title from column name |
+| `yAxisTitle` | `string \| boolean` | - | Y-axis title. Use `true` for auto-title from column name |
+| `xBaseline` | `boolean` | `true` | Show X-axis baseline |
+| `yBaseline` | `boolean` | `false` | Show Y-axis baseline |
+| `xGridlines` | `boolean` | `false` | Show X-axis gridlines |
+| `yGridlines` | `boolean` | `true` | Show Y-axis gridlines |
+| `xTickMarks` | `boolean` | `false` | Show X-axis tick marks |
+| `yTickMarks` | `boolean` | `false` | Show Y-axis tick marks |
+
+```vue
+<LineChart
+  :data="data"
+  x="month"
+  y="sales"
+  :xAxisLabels="true"
+  :yAxisLabels="true"
+  xAxisTitle="Month"
+  yAxisTitle="Sales ($)"
+  :yGridlines="true"
+/>
+```
+
+### Legend Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `legend` | `boolean` | auto | Show legend. Defaults to `true` when multiple series exist |
+| `legendPosition` | `'top' \| 'bottom' \| 'left' \| 'right'` | `'top'` | Position of the legend |
+
+```vue
+<!-- Legend at bottom -->
+<LineChart
+  :data="data"
+  x="month"
+  :y="['sales', 'orders']"
+  :legend="true"
+  legendPosition="bottom"
+/>
+
+<!-- Legend on the right -->
+<BarChart
+  :data="data"
+  x="month"
+  y="sales"
+  series="region"
+  legendPosition="right"
+/>
+```
 
 ### Export Props
 

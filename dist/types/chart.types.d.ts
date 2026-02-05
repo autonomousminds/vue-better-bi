@@ -10,6 +10,7 @@ export type MarkerShape = 'circle' | 'rect' | 'roundRect' | 'triangle' | 'diamon
 export type StepPosition = 'start' | 'middle' | 'end';
 export type HandleMissing = 'gap' | 'connect' | 'zero';
 export type LabelPosition = 'top' | 'bottom' | 'left' | 'right' | 'inside' | 'outside';
+export type LegendPosition = 'top' | 'bottom' | 'left' | 'right';
 /**
  * Zoom (DataZoom) types
  */
@@ -203,6 +204,7 @@ export interface BaseChartProps {
     y2AxisLabels?: boolean;
     y2AxisColor?: ColorInput;
     legend?: boolean;
+    legendPosition?: LegendPosition;
     height?: string;
     width?: string;
     chartAreaHeight?: number;

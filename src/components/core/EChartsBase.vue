@@ -105,15 +105,6 @@ function updateChart(): void {
 
   const config = { ...props.config };
 
-  // Debug logging
-  console.log('[EChartsBase] updateChart called:', {
-    xAxis: config.xAxis,
-    xAxisName: (config.xAxis as Record<string, unknown>)?.name,
-    legend: config.legend,
-    legendShow: (config.legend as Record<string, unknown>)?.show,
-    isFirstRender: isFirstRender.value
-  });
-
   // Ensure series is a valid array with properly typed entries
   // Filter out null/undefined entries AND entries without a valid 'type' property
   if (Array.isArray(config.series)) {

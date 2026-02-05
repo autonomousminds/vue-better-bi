@@ -30,7 +30,7 @@ export interface InteractiveFeaturesOptions {
 
 export interface UseInteractiveFeaturesReturn {
   dataZoomConfig: ComputedRef<EChartsOption['dataZoom']>;
-  toolboxConfig: ComputedRef<Record<string, unknown> | undefined>;
+  toolboxConfig: ComputedRef<Record<string, unknown>>;
   brushConfig: ComputedRef<Record<string, unknown> | undefined>;
   animationConfig: ComputedRef<Partial<EChartsOption>>;
   tooltipBaseConfig: ComputedRef<Record<string, unknown>>;
@@ -179,10 +179,11 @@ export function useInteractiveFeatures(options: InteractiveFeaturesOptions): Use
   /**
    * Toolbox configuration
    */
-  const toolboxConfig = computed<Record<string, unknown> | undefined>(() => {
+  const toolboxConfig = computed<Record<string, unknown>>(() => {
     const toolboxProp = toValue(options.toolbox);
 
-    if (!toolboxProp) return undefined;
+    // Explicitly hide toolbox when disabled (required for notMerge: false updates)
+    if (!toolboxProp) return { show: false };
 
     const config: ToolboxConfig = toolboxProp === true
       ? { ...TOOLBOX_DEFAULTS }

@@ -14,6 +14,7 @@ export type MarkerShape = 'circle' | 'rect' | 'roundRect' | 'triangle' | 'diamon
 export type StepPosition = 'start' | 'middle' | 'end';
 export type HandleMissing = 'gap' | 'connect' | 'zero';
 export type LabelPosition = 'top' | 'bottom' | 'left' | 'right' | 'inside' | 'outside';
+export type LegendPosition = 'top' | 'bottom' | 'left' | 'right';
 
 // ============================================================================
 // Interactive Feature Types
@@ -256,6 +257,7 @@ export interface BaseChartProps {
 
   // Display
   legend?: boolean;
+  legendPosition?: LegendPosition;
   height?: string;
   width?: string;
   chartAreaHeight?: number;

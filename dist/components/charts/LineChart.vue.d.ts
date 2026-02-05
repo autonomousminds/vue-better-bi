@@ -16,6 +16,7 @@ declare const _default: import('vue').DefineComponent<import('vue').ExtractPropT
     yAxisLabels: boolean;
     downloadableData: boolean;
     downloadableImage: boolean;
+    legendPosition: string;
 }>>, {}, {}, {}, {}, import('vue').ComponentOptionsMixin, import('vue').ComponentOptionsMixin, {
     click: (params: unknown) => void;
 }, string, import('vue').PublicProps, Readonly<import('vue').ExtractPropTypes<__VLS_WithDefaults<__VLS_TypePropsToRuntimeProps<LineChartProps>, {
@@ -34,6 +35,7 @@ declare const _default: import('vue').DefineComponent<import('vue').ExtractPropT
     yAxisLabels: boolean;
     downloadableData: boolean;
     downloadableImage: boolean;
+    legendPosition: string;
 }>>> & Readonly<{
     onClick?: ((params: unknown) => any) | undefined;
 }>, {
@@ -51,6 +53,7 @@ declare const _default: import('vue').DefineComponent<import('vue').ExtractPropT
     xAxisLabels: boolean;
     yGridlines: boolean;
     yAxisLabels: boolean;
+    legendPosition: import('../..').LegendPosition;
     lineOpacity: number;
 }, {}, {}, {}, string, import('vue').ComponentProvideOptions, true, {}, any>;
 export default _default;

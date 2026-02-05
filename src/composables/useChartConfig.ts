@@ -11,11 +11,77 @@ import type {
   FormatObject,
   ColumnUnitSummary,
   SeriesConfig,
-  ColumnSummary
+  ColumnSummary,
+  LegendPosition
 } from '../types';
 import { formatAxisValue, formatTitle, getFormatObjectFromString, lookupColumnFormat } from '../utils/formatting';
 import { standardizeDateColumn } from '../utils/dateParsing';
 import { createTooltipConfig } from './useTooltip';
+
+/**
+ * Gets legend configuration based on position
+ */
+function getLegendConfig(
+  show: boolean,
+  position: LegendPosition | undefined,
+  defaultTop: number,
+  hasZoomSlider: boolean = false
+): Record<string, unknown> {
+  const baseConfig = {
+    show,
+    type: 'scroll' as const,
+    padding: [0, 0, 0, 0] as [number, number, number, number]
+  };
+
+  // Default position is top
+  if (!position || position === 'top') {
+    return {
+      ...baseConfig,
+      top: defaultTop,
+      left: 'center',
+      orient: 'horizontal' as const
+    };
+  }
+
+  let result: Record<string, unknown>;
+  switch (position) {
+    case 'bottom':
+      // Position legend between chart and zoom slider
+      // Legend sits just above the zoom slider (or at bottom if no slider)
+      result = {
+        ...baseConfig,
+        bottom: hasZoomSlider ? 40 : 0,
+        left: 'center',
+        orient: 'horizontal' as const
+      };
+      break;
+    case 'left':
+      result = {
+        ...baseConfig,
+        left: 5,
+        top: 'middle',
+        orient: 'vertical' as const
+      };
+      break;
+    case 'right':
+      result = {
+        ...baseConfig,
+        right: 5,
+        top: 'middle',
+        orient: 'vertical' as const
+      };
+      break;
+    default:
+      result = {
+        ...baseConfig,
+        top: defaultTop,
+        left: 'center',
+        orient: 'horizontal' as const
+      };
+  }
+
+  return result;
+}
 
 export interface ChartConfigOptions extends BaseChartProps {
   chartType?: string;
@@ -335,14 +401,37 @@ export function useChartConfig(
       (hasSubtitle ? subtitleFontSize : 0) +
       titleBoxPadding * Math.max(hasTitle ? 1 : 0, hasSubtitle ? 1 : 0);
 
-    const legendHeight = hasLegend ? 15 : 0;
+    // Legend position affects chart dimensions
+    const legendPos = props.legendPosition || 'top';
+    const isLegendTop = legendPos === 'top';
+    const isLegendBottom = legendPos === 'bottom';
+    const isLegendLeft = legendPos === 'left';
+    const isLegendRight = legendPos === 'right';
+
+    const legendHeight = hasLegend && isLegendTop ? 15 : 0;
     const legendPaddingTop = 7 * Math.max(hasTitle ? 1 : 0, hasSubtitle ? 1 : 0);
     const legendTop = titleBoxHeight + legendPaddingTop;
 
     const chartAreaPaddingTop = 10;
     const chartAreaPaddingBottom = 10;
     const chartTop = legendTop + legendHeight + chartAreaPaddingTop;
-    const chartBottom = chartAreaPaddingBottom;
+
+    // Check if there's a zoom slider at the bottom
+    const hasZoomSlider = !!props.zoom && (
+      props.zoom === true ||
+      (typeof props.zoom === 'object' && (props.zoom.type === 'slider' || props.zoom.type === 'both'))
+    );
+
+    // Calculate bottom space needed
+    // When legend is at bottom: grid must leave room for legend below x-axis labels
+    // Stack from bottom: zoom slider (~40px) + legend (~20px) + gap
+    const zoomSliderHeight = hasZoomSlider ? 40 : 0;
+    const bottomLegendHeight = hasLegend && isLegendBottom ? 25 : 0;
+    const chartBottom = chartAreaPaddingBottom + zoomSliderHeight + bottomLegendHeight;
+
+    // Side padding for left/right legend - use fixed pixels to leave room for legend
+    const leftLegendPadding = hasLegend && isLegendLeft ? 70 : (swapXY ? '1%' : '0.8%');
+    const rightLegendPadding = hasLegend && isLegendRight ? 70 : (swapXY ? '4%' : '3%');
 
     // Axis titles
     const xAxisTitle = props.xAxisTitle === true
@@ -355,18 +444,6 @@ export function useChartConfig(
 
     // Extra bottom padding needed when x-axis has a title
     const xAxisTitlePadding = xAxisTitle ? 25 : 0;
-
-    // Debug logging
-    console.log('[useChartConfig] Config:', {
-      xAxisTitle,
-      yAxisTitle,
-      legend,
-      hasLegend,
-      totalSeriesCount: totalSeriesCount.value,
-      swapXY,
-      propsXAxisTitle: props.xAxisTitle,
-      propsYAxisTitle: props.yAxisTitle
-    });
 
     // Build axis config
     const xAxisConfig = swapXY
@@ -455,16 +532,10 @@ export function useChartConfig(
         subtext: props.subtitle
       },
       tooltip: tooltipConfig,
-      legend: {
-        show: legend,
-        type: 'scroll' as const,
-        top: legendTop,
-        padding: [0, 0, 0, 0] as [number, number, number, number]
-        // Don't set data - let ECharts auto-detect from series names
-      },
+      legend: getLegendConfig(legend, props.legendPosition, legendTop, hasZoomSlider),
       grid: {
-        left: props.leftPadding || (swapXY ? '1%' : '0.8%'),
-        right: props.rightPadding || (swapXY ? '4%' : '3%'),
+        left: props.leftPadding || leftLegendPadding,
+        right: props.rightPadding || rightLegendPadding,
         bottom: chartBottom + xAxisTitlePadding,
         top: chartTop,
         containLabel: true
