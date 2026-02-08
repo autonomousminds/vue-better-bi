@@ -9,19 +9,16 @@ import type { EChartsOption, ECharts } from 'echarts';
 import * as echarts from 'echarts';
 import debounce from 'debounce';
 import type { Appearance, ChartRenderer } from '../../types';
-import { defaultThemeLight, defaultThemeDark } from '../../themes/echartsThemes';
+import { createEChartsTheme, themeVersion } from '../../themes/echartsThemes';
 import { applySeriesColors, applyEchartsOptions, applySeriesOptions } from '../../composables/useECharts';
 import ChartHeader from './ChartHeader.vue';
 
 const ANIMATION_DURATION = 500;
 
-// Register themes once
-let themesRegistered = false;
+// Register ECharts themes from current configuration
 function registerThemes(): void {
-  if (themesRegistered) return;
-  echarts.registerTheme('light', defaultThemeLight);
-  echarts.registerTheme('dark', defaultThemeDark);
-  themesRegistered = true;
+  echarts.registerTheme('light', createEChartsTheme('light'));
+  echarts.registerTheme('dark', createEChartsTheme('dark'));
 }
 
 interface Props {
@@ -46,8 +43,7 @@ const props = withDefaults(defineProps<Props>(), {
   height: '291px',
   width: '100%',
   theme: 'light',
-  renderer: 'canvas',
-  backgroundColor: 'white'
+  renderer: 'canvas'
 });
 
 const emit = defineEmits<{
@@ -61,14 +57,11 @@ const chartInstance = shallowRef<ECharts | null>(null);
 const hovering = ref(false);
 const isFirstRender = ref(true);
 
-const containerStyle = computed(() => {
-  if (!props.backgroundColor) return {};
-  return {
-    backgroundColor: props.backgroundColor,
-    padding: '0.75rem',
-    borderRadius: '6px'
-  };
-});
+const containerStyle = computed(() => ({
+  padding: '0.75rem',
+  borderRadius: '6px',
+  ...(props.backgroundColor ? { backgroundColor: props.backgroundColor } : {})
+}));
 
 // Check if we should use SVG (iOS large canvas workaround)
 function shouldUseSvg(container: HTMLElement): boolean {
@@ -252,7 +245,7 @@ watch(
   { deep: true }
 );
 
-// Watch for theme changes
+// Watch for theme changes (light/dark toggle)
 watch(
   () => props.theme,
   () => {
@@ -260,6 +253,13 @@ watch(
     updateChart();
   }
 );
+
+// Watch for theme configuration changes (preset applied)
+watch(themeVersion, () => {
+  registerThemes();
+  initChart();
+  updateChart();
+});
 
 // Expose chart instance
 defineExpose({

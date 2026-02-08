@@ -4,7 +4,7 @@
 
 import { ref, computed, watch, onMounted, onUnmounted, provide, inject, type Ref, type ComputedRef } from 'vue';
 import type { Appearance, AppearancePreference, Theme, ColorPaletteInput, ColorScaleInput } from '../types';
-import { getThemes, configureThemes } from '../themes/echartsThemes';
+import { getThemes, configureThemes, themeVersion } from '../themes/echartsThemes';
 import {
   resolveColor as resolveColorFn,
   resolveColorsObject as resolveColorsObjectFn,
@@ -149,8 +149,9 @@ export function useTheme(options: UseThemeOptions = {}): UseThemeReturn {
       : selectedAppearance.value;
   });
 
-  // Current theme object
+  // Current theme object (reactive to both appearance and theme configuration changes)
   const theme = computed<Theme>(() => {
+    void themeVersion.value; // track theme reconfiguration
     const themes = getThemes();
     return themes[activeAppearance.value];
   });

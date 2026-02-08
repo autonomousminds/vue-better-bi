@@ -1,22 +1,22 @@
 <script setup lang="ts">
 /**
  * Histogram component
- * Displays frequency distribution of data
+ * Displays frequency distribution of data using echarts-stat for adaptive binning.
+ * Ported from Evidence's Hist.svelte implementation.
  */
 
 import { computed, ref } from 'vue';
 import type { EChartsOption } from 'echarts';
+import ecStat from 'echarts-stat';
 import type { HistogramProps } from '../../types';
 import EChartsBase from '../core/EChartsBase.vue';
 import ChartFooter from '../core/ChartFooter.vue';
-import { useChartConfig } from '../../composables/useChartConfig';
+import { useChartConfig, getDistinctValues } from '../../composables/useChartConfig';
 import { useThemeStores } from '../../composables/useTheme';
-import { formatValue } from '../../utils/formatting';
+import { formatValue, formatAxisValue, getFormatObjectFromString } from '../../utils/formatting';
 
 const props = withDefaults(defineProps<HistogramProps>(), {
-  fillOpacity: 0.8,
-  outlineWidth: 1,
-  bins: 10,
+  fillOpacity: 1,
   xBaseline: true,
   yGridlines: true,
   xAxisLabels: true,
@@ -44,100 +44,148 @@ const {
 const fillColorResolved = computed(() =>
   props.fillColor ? resolveColor(props.fillColor).value : undefined
 );
-const outlineColorResolved = computed(() =>
-  props.outlineColor ? resolveColor(props.outlineColor).value : undefined
-);
 const colorPaletteResolved = computed(() =>
   resolveColorPalette(props.colorPalette || 'default').value
 );
 
-// Calculate histogram bins
+// Determine binning method based on data characteristics (matches Evidence's approach)
+const binningMethod = computed(() => {
+  if (!props.x || !processedData.value.length) return 'squareRoot';
+
+  const xDistinct = getDistinctValues(processedData.value, props.x)
+    .filter((v) => v != null) as number[];
+  const xMax = Math.max(...xDistinct);
+
+  if (xDistinct.length <= 1) return 'squareRoot';
+  if (xMax < 10) return 'freedmanDiaconis';
+  if (xMax < 40) return 'sturges';
+  return 'squareRoot';
+});
+
+// Calculate histogram bins using echarts-stat
 const histogramData = computed(() => {
   if (!props.x || !processedData.value.length) {
-    return { bins: [], counts: [] };
+    return { data: [] };
   }
 
-  // Get numeric values
+  // Extract x column values (echarts-stat expects a flat array)
   const values = processedData.value
-    .map((d) => d[props.x!] as number)
-    .filter((v) => v != null && !isNaN(v))
-    .sort((a, b) => a - b);
+    .map((d) => d[props.x!])
+    .filter((v) => v != null && !isNaN(v as number));
 
   if (values.length === 0) {
-    return { bins: [], counts: [] };
+    return { data: [] };
   }
 
-  const min = values[0];
-  const max = values[values.length - 1];
-  const range = max - min;
-  const binWidth = range / props.bins!;
+  // Run echarts-stat histogram binning
+  const result = ecStat.histogram(values as number[], binningMethod.value);
 
-  // Create bins
-  const bins: { start: number; end: number; label: string }[] = [];
-  const counts: number[] = [];
-
-  for (let i = 0; i < props.bins!; i++) {
-    const binStart = min + i * binWidth;
-    const binEnd = min + (i + 1) * binWidth;
-    bins.push({
-      start: binStart,
-      end: binEnd,
-      label: `${formatValue(binStart, formats.value.x, unitSummaries.value.x)} - ${formatValue(binEnd, formats.value.x, unitSummaries.value.x)}`
-    });
-
-    // Count values in this bin
-    const count = values.filter((v) => {
-      if (i === props.bins! - 1) {
-        // Last bin includes the max value
-        return v >= binStart && v <= binEnd;
-      }
-      return v >= binStart && v < binEnd;
-    }).length;
-
-    counts.push(count);
+  // Remove empty first bin if it would cause negative values on x-axis
+  if (result.data.length > 0) {
+    const firstBinMin = result.data[0][2];
+    const firstBinCount = result.data[0][1];
+    if (firstBinMin < 0 && firstBinCount === 0) {
+      result.data.shift();
+    }
   }
 
-  return { bins, counts };
+  return result;
 });
+
+// Get the x format for tooltip formatting
+const xFormat = computed(() => formats.value.x);
+
+// Y format for histogram: since there's no y data column, formats.value.y is always undefined.
+// Build it from yFmt prop directly if provided.
+const yFormat = computed(() =>
+  props.yFmt ? getFormatObjectFromString(props.yFmt, 'number') : undefined
+);
 
 // Build final config
 const chartConfig = computed<EChartsOption>(() => {
   const config = { ...baseConfig.value };
-  const { bins, counts } = histogramData.value;
+  const histData = histogramData.value;
 
-  // Update x-axis
-  const xAxisBase = config.xAxis as Record<string, unknown> | undefined;
+  if (!histData.data.length) return config;
+
+  // X-axis: continuous value axis (NOT category)
+  // Preserve base config props (grid, legend, etc.) but override axis type and formatting
+  const baseXAxis = config.xAxis as Record<string, unknown> | undefined;
   config.xAxis = {
-    ...xAxisBase,
-    type: 'category' as const,
-    data: bins.map((b) => b.label),
+    ...baseXAxis,
+    type: 'value' as const,
+    boundaryGap: ['1%', '1%'] as [string, string],
+    scale: false,
+    min: histData.data[0][2], // min of first bin
     axisLabel: {
-      ...(xAxisBase?.axisLabel as Record<string, unknown> | undefined),
-      rotate: 45,
-      interval: 0
+      show: props.xAxisLabels !== false,
+      hideOverlap: true,
+      formatter: (value: number) => formatAxisValue(value, formats.value.x, unitSummaries.value.x)
     }
   };
 
-  // Update y-axis for counts
+  // Y-axis: frequency counts
+  const baseYAxis = config.yAxis as Record<string, unknown> | undefined;
   config.yAxis = {
-    ...config.yAxis,
-    type: 'value',
-    name: 'Count'
+    ...baseYAxis,
+    type: 'value' as const,
+    boundaryGap: ['0%', '1%'] as [string, string],
+    axisLabel: {
+      show: props.yAxisLabels !== false,
+      hideOverlap: true,
+      formatter: (value: number) => formatAxisValue(value, yFormat.value)
+    }
   };
 
-  // Update series
+  // Custom series type with renderItem (matches Evidence's Hist.svelte)
+  const resolvedFill = fillColorResolved.value as string | undefined;
+  const opacity = props.fillOpacity;
+  const xFmt = xFormat.value;
+
   config.series = [
     {
-      name: 'Frequency',
-      type: 'bar' as const,
-      data: counts,
-      barWidth: '90%',
-      itemStyle: {
-        color: (fillColorResolved.value || colorPaletteResolved.value?.[0]) as string | undefined,
-        opacity: props.fillOpacity,
-        borderColor: outlineColorResolved.value as string | undefined,
-        borderWidth: props.outlineWidth
-      }
+      type: 'custom' as const,
+      label: { show: true },
+      renderItem: ((_params: unknown, api: unknown) => {
+        const a = api as {
+          value(idx: number): number;
+          coord(point: number[]): number[];
+          size(size: number[]): number[];
+          visual(type: string): string;
+        };
+        const yValue = a.value(1);
+        const start = a.coord([a.value(2), yValue]);
+        const size = a.size([a.value(3) - a.value(2), yValue]);
+        const barColor = a.visual('color');
+        return {
+          type: 'rect' as const,
+          shape: {
+            x: start[0],
+            y: start[1],
+            width: size[0] - 1, // 1px gap between bars
+            height: size[1]
+          },
+          style: {
+            fill: resolvedFill ?? barColor,
+            opacity
+          }
+        };
+      }) as never,
+      data: histData.data as never,
+      encode: {
+        tooltip: [1],   // frequency count
+        itemName: 4      // bin range string
+      },
+      tooltip: {
+        formatter: ((params: unknown) => {
+          const p = params as { value: number[] };
+          const binMin = p.value[2];
+          const binMax = p.value[3];
+          const count = p.value[1];
+          return `<span style='font-weight:600;'>${formatValue(binMin, xFmt)} - ${formatValue(binMax, xFmt)}</span> <span style='margin-left: 10px;'>${count}</span>`;
+        }) as never
+      },
+      z: 3
     }
   ];
 
@@ -146,16 +194,10 @@ const chartConfig = computed<EChartsOption>(() => {
     config.color = colorPaletteResolved.value;
   }
 
-  // Custom tooltip
+  // Tooltip trigger: item (not axis, since we use custom series)
   config.tooltip = {
     ...(config.tooltip as Record<string, unknown>),
-    trigger: 'axis' as const,
-    axisPointer: { type: 'shadow' as const },
-    formatter: (params: unknown) => {
-      const p = params as { name: string; value: number }[];
-      const param = p[0];
-      return `<span style='font-weight: 600;'>${param.name}</span><br/>Count: <span style='float:right; margin-left: 10px;'>${param.value}</span>`;
-    }
+    trigger: 'item' as const
   };
 
   return config;

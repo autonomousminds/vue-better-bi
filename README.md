@@ -145,6 +145,42 @@ const {
 } = useTheme();
 ```
 
+### Pre-built Themes
+
+Apply a complete theme preset with a single call:
+
+```typescript
+import { applyPreset } from 'vue-better-echarts';
+
+applyPreset('midnight');
+```
+
+Available presets:
+
+| Preset | Description |
+|--------|-------------|
+| `sandstone` | Warm earth tones — browns, tans, and sandy hues |
+| `midnight` | Dark theme with vibrant purple, cyan, and pink accents |
+| `evergreen` | Natural greens and teals |
+| `grayscale` | Monochromatic black and white |
+| `spectrum` | Scientific color gradient from deep blue to bright yellow |
+| `vintage` | Bold retro primary colors on paper-white background |
+
+You can also start from a preset and customize further:
+
+```typescript
+import { themePresets, configureThemes } from 'vue-better-echarts';
+
+const custom = {
+  light: {
+    ...themePresets.midnight.light,
+    colors: { ...themePresets.midnight.light.colors, 'base-100': '#1a1a2e' }
+  },
+  dark: themePresets.midnight.dark
+};
+configureThemes(custom);
+```
+
 ### Custom Themes
 
 ```typescript
@@ -554,13 +590,39 @@ The `echartsOptions` prop is still available for edge cases not covered by struc
   }"
 />
 
-## Running the Demo
+## Interactive Playground
+
+The library includes a full interactive playground app for exploring every chart type and prop. It serves as both a demo and a tutorial for learning the API.
+
+### Features
+
+- **All 17 chart types** with live rendering and sample data
+- **Complete prop controls** — every prop for every chart type is adjustable via the settings panel (toggles, sliders, dropdowns, color pickers, number inputs)
+- **Three view modes**:
+  - **Chart** — live rendered chart that updates as you change settings
+  - **Code** — auto-generated Vue SFC that reproduces the current configuration (copy-paste ready)
+  - **Data** — table view of the sample dataset powering the chart
+- **Grouped settings** — props organized into collapsible sections (Chart-Specific, Titles, Axes, Display, Formatting, Zoom, Toolbox, Animation, Tooltip, Export)
+- **Theme support** — light/dark toggle and theme preset selector
+- **URL hash sync** — bookmark any chart type directly (e.g. `#scatter-plot`)
+
+### Running the Playground
 
 ```bash
 cd examples/demo-app
 npm install
 npm run dev
 ```
+
+### Layout
+
+The playground uses a three-panel layout:
+
+| Panel | Description |
+|-------|-------------|
+| **Left sidebar** | Chart type selector grouped by category (Standard, Statistical, Part-to-Whole, Relational, Maps) with search filter |
+| **Center area** | Chart/Code/Data tabs with chart info header |
+| **Right panel** | Settings panel with all props for the selected chart type |
 
 ## API
 

@@ -3,7 +3,14 @@
  * Light and dark theme support with customizable colors
  */
 
+import { ref } from 'vue';
 import type { EChartsThemeConfig, Appearance, Theme } from '../types';
+
+/**
+ * Reactive counter that increments when themes are reconfigured.
+ * Watch this to react to theme changes.
+ */
+export const themeVersion = ref(0);
 
 // Default theme colors - computed using the algorithm from computeShades.js
 // Based on base-100 light: #ffffff, dark: #09090b
@@ -94,6 +101,7 @@ export function configureThemes(customThemes: { light?: Partial<Theme>; dark?: P
       colorScales: { ...themes.dark.colorScales, ...customThemes.dark.colorScales }
     };
   }
+  themeVersion.value++;
 }
 
 /**
