@@ -408,6 +408,57 @@ export interface FunnelChartProps {
   backgroundColor?: string;
 }
 
+export type PieLabelPosition = 'inside' | 'outside';
+
+export interface PieChartProps {
+  /** Data records array */
+  data: DataRecord[];
+  /** Column name for slice names. Default: first column */
+  name?: string;
+  /** Column name for slice values. Default: second column */
+  value?: string;
+  /** Chart title */
+  title?: string;
+  /** Chart subtitle */
+  subtitle?: string;
+  /** Show legend. Default: true */
+  legend?: boolean;
+  /** Legend position. Default: 'top' */
+  legendPosition?: LegendPosition;
+  /** Chart height. Default: '400px' */
+  height?: string;
+  /** Chart width. Default: '100%' */
+  width?: string;
+  /** Explicit chart area height in pixels */
+  chartAreaHeight?: number;
+  /** Color palette name or array of colors */
+  colorPalette?: ColorPaletteInput;
+  /** Format string for values */
+  valueFmt?: string;
+  /** Format string for percentages */
+  percentFmt?: string;
+  /** Show percentage in labels/tooltip. Default: true */
+  showPercent?: boolean;
+  /** Render as donut chart. Default: false */
+  donut?: boolean;
+  /** Custom inner radius (percentage string like '40%' or number). Overrides donut default */
+  innerRadius?: string | number;
+  /** Show labels on slices. Default: true */
+  labels?: boolean;
+  /** Label position. Default: 'outside' */
+  labelPosition?: PieLabelPosition;
+  /** Custom ECharts options override */
+  echartsOptions?: EChartsOption;
+  /** Renderer type */
+  renderer?: ChartRenderer;
+  /** Enable data download. Default: true */
+  downloadableData?: boolean;
+  /** Enable image download. Default: true */
+  downloadableImage?: boolean;
+  /** Background color */
+  backgroundColor?: string;
+}
+
 export interface HeatmapProps {
   data: DataRecord[];
   x: string;
@@ -478,6 +529,41 @@ export interface SankeyDiagramProps {
   downloadableData?: boolean;
   downloadableImage?: boolean;
   backgroundColor?: string;
+}
+
+export interface WaterfallChartProps extends BaseChartProps {
+  /** Color for positive/increase bars */
+  positiveColor?: ColorInput;
+  /** Color for negative/decrease bars */
+  negativeColor?: ColorInput;
+  /** Color for total/subtotal bars */
+  totalColor?: ColorInput;
+  /** Bar fill opacity. Default: 1 */
+  fillOpacity?: number;
+  /** Bar outline color */
+  outlineColor?: ColorInput;
+  /** Bar outline width. Default: 0 */
+  outlineWidth?: number;
+  /** Show value labels on bars. Default: false */
+  labels?: boolean;
+  /** Label font size */
+  labelSize?: number;
+  /** Label position */
+  labelPosition?: LabelPosition;
+  /** Label color */
+  labelColor?: ColorInput;
+  /** Auto-add a total bar at the end. Default: true */
+  showTotal?: boolean;
+  /** Label for the auto-total bar. Default: 'Total' */
+  totalLabel?: string;
+  /** Column name that marks rows as totals (boolean column) */
+  totalColumn?: string;
+  /** Show connector lines between bars. Default: true */
+  connectorLines?: boolean;
+  /** Connector line color */
+  connectorLineColor?: ColorInput;
+  /** Connector line type. Default: 'dashed' */
+  connectorLineType?: LineType;
 }
 
 export interface USMapProps {

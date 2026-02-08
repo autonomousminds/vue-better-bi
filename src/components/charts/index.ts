@@ -6,6 +6,8 @@ export { default as BubbleChart } from './BubbleChart.vue';
 export { default as BoxPlot } from './BoxPlot.vue';
 export { default as Histogram } from './Histogram.vue';
 export { default as FunnelChart } from './FunnelChart.vue';
+export { default as PieChart } from './PieChart.vue';
 export { default as Heatmap } from './Heatmap.vue';
 export { default as CalendarHeatmap } from './CalendarHeatmap.vue';
 export { default as SankeyDiagram } from './SankeyDiagram.vue';
+export { default as WaterfallChart } from './WaterfallChart.vue';

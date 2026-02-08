@@ -49,9 +49,11 @@ export {
   BoxPlot,
   Histogram,
   FunnelChart,
+  PieChart,
   Heatmap,
   CalendarHeatmap,
-  SankeyDiagram
+  SankeyDiagram,
+  WaterfallChart
 } from './components/charts';
 
 // ============================================================================

@@ -7,7 +7,9 @@ import {
   ScatterPlot,
   Heatmap,
   FunnelChart,
+  PieChart,
   SankeyDiagram,
+  WaterfallChart,
   useThemeStores
 } from 'vue-better-echarts';
 import type {
@@ -102,6 +104,16 @@ const funnelData = ref([
   { stage: 'Closed', count: 680 }
 ]);
 
+const pieData = ref([
+  { category: 'Electronics', revenue: 42000 },
+  { category: 'Clothing', revenue: 28000 },
+  { category: 'Food & Beverage', revenue: 19500 },
+  { category: 'Home & Garden', revenue: 15200 },
+  { category: 'Sports', revenue: 11800 },
+  { category: 'Books', revenue: 8400 },
+  { category: 'Other', revenue: 5100 }
+]);
+
 const sankeyData = ref([
   { source: 'Website', target: 'Signup', value: 500 },
   { source: 'Email', target: 'Signup', value: 300 },
@@ -109,6 +121,15 @@ const sankeyData = ref([
   { source: 'Signup', target: 'Trial', value: 700 },
   { source: 'Signup', target: 'Purchase', value: 100 },
   { source: 'Trial', target: 'Purchase', value: 350 }
+]);
+
+const waterfallData = ref([
+  { category: 'Revenue', amount: 120000 },
+  { category: 'COGS', amount: -45000 },
+  { category: 'Operating Expenses', amount: -30000 },
+  { category: 'Marketing', amount: -12000 },
+  { category: 'Other Income', amount: 5000 },
+  { category: 'Tax', amount: -9500 }
 ]);
 
 // ============================================================================
@@ -466,6 +487,33 @@ const funnelSettings = ref({
 });
 
 // ============================================================================
+// PIE CHART Settings
+// ============================================================================
+const pieSettings = ref({
+  // Display
+  title: 'Revenue by Category',
+  subtitle: '',
+  legend: true,
+  legendPosition: 'top' as 'top' | 'bottom' | 'left' | 'right',
+  showPercent: true,
+  // Format
+  valueFmt: 'usd0k',
+  // Appearance
+  donut: false,
+  innerRadius: 50,
+  labels: true,
+  labelPosition: 'outside' as 'inside' | 'outside',
+  // Download
+  downloadableData: true,
+  downloadableImage: true
+});
+
+const pieInnerRadius = computed(() => {
+  if (!pieSettings.value.donut) return undefined;
+  return `${pieSettings.value.innerRadius}%`;
+});
+
+// ============================================================================
 // SANKEY DIAGRAM Settings
 // ============================================================================
 const sankeySettings = ref({
@@ -477,6 +525,33 @@ const sankeySettings = ref({
   nodeWidth: 20,
   nodeGap: 8,
   nodeAlign: 'justify' as 'left' | 'right' | 'justify',
+  // Download
+  downloadableData: true,
+  downloadableImage: true
+});
+
+// ============================================================================
+// WATERFALL CHART Settings
+// ============================================================================
+const waterfallSettings = ref({
+  // Display
+  title: 'Profit & Loss Waterfall',
+  subtitle: 'Breaking down revenue to net income',
+  // Labels
+  labels: true,
+  labelPosition: 'top' as 'top' | 'inside',
+  // Total
+  showTotal: true,
+  totalLabel: 'Net Income',
+  // Connector lines
+  connectorLines: true,
+  // Axis
+  xAxisLabels: true,
+  yAxisLabels: true,
+  xGridlines: false,
+  yGridlines: true,
+  // Style
+  fillOpacity: 1,
   // Download
   downloadableData: true,
   downloadableImage: true
@@ -1543,6 +1618,121 @@ const sankeySettings = ref({
       </section>
 
       <!-- ================================================================== -->
+      <!-- PIE CHART -->
+      <!-- ================================================================== -->
+      <section class="chart-section with-settings">
+        <div class="section-header">
+          <h2>Pie Chart</h2>
+          <span class="badge">Full Settings</span>
+        </div>
+
+        <div class="settings-panel">
+          <!-- Display -->
+          <div class="settings-group">
+            <h4>Display</h4>
+            <label>
+              Title
+              <input type="text" v-model="pieSettings.title" />
+            </label>
+            <label>
+              Subtitle
+              <input type="text" v-model="pieSettings.subtitle" />
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" v-model="pieSettings.legend" />
+              Show Legend
+            </label>
+            <label v-if="pieSettings.legend">
+              Legend Position
+              <select v-model="pieSettings.legendPosition">
+                <option value="top">Top</option>
+                <option value="bottom">Bottom</option>
+                <option value="left">Left</option>
+                <option value="right">Right</option>
+              </select>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" v-model="pieSettings.showPercent" />
+              Show Percent
+            </label>
+          </div>
+
+          <!-- Appearance -->
+          <div class="settings-group">
+            <h4>Appearance</h4>
+            <label class="checkbox">
+              <input type="checkbox" v-model="pieSettings.donut" />
+              Donut Mode
+            </label>
+            <label v-if="pieSettings.donut">
+              Inner Radius (%)
+              <input type="range" v-model.number="pieSettings.innerRadius" min="10" max="80" />
+              {{ pieSettings.innerRadius }}%
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" v-model="pieSettings.labels" />
+              Show Labels
+            </label>
+            <label v-if="pieSettings.labels">
+              Label Position
+              <select v-model="pieSettings.labelPosition">
+                <option value="outside">Outside</option>
+                <option value="inside">Inside</option>
+              </select>
+            </label>
+          </div>
+
+          <!-- Format -->
+          <div class="settings-group">
+            <h4>Format</h4>
+            <label>
+              Value Format
+              <select v-model="pieSettings.valueFmt">
+                <option value="num0">Number (no decimals)</option>
+                <option value="num1">Number (1 decimal)</option>
+                <option value="usd0">USD (no decimals)</option>
+                <option value="usd0k">USD (k)</option>
+                <option value="usd2">USD (2 decimals)</option>
+                <option value="pct1">Percent</option>
+              </select>
+            </label>
+          </div>
+
+          <!-- Download -->
+          <div class="settings-group">
+            <h4>Export</h4>
+            <label class="checkbox">
+              <input type="checkbox" v-model="pieSettings.downloadableData" />
+              Downloadable Data
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" v-model="pieSettings.downloadableImage" />
+              Downloadable Image
+            </label>
+          </div>
+        </div>
+
+        <PieChart
+          :data="pieData"
+          name="category"
+          value="revenue"
+          :title="pieSettings.title"
+          :subtitle="pieSettings.subtitle || undefined"
+          :valueFmt="pieSettings.valueFmt"
+          height="400px"
+          :legend="pieSettings.legend"
+          :legendPosition="pieSettings.legendPosition"
+          :showPercent="pieSettings.showPercent"
+          :donut="pieSettings.donut"
+          :innerRadius="pieInnerRadius"
+          :labels="pieSettings.labels"
+          :labelPosition="pieSettings.labelPosition"
+          :downloadableData="pieSettings.downloadableData"
+          :downloadableImage="pieSettings.downloadableImage"
+        />
+      </section>
+
+      <!-- ================================================================== -->
       <!-- SANKEY DIAGRAM -->
       <!-- ================================================================== -->
       <section class="chart-section with-settings">
@@ -1626,6 +1816,135 @@ const sankeySettings = ref({
           :nodeAlign="sankeySettings.nodeAlign"
           :downloadableData="sankeySettings.downloadableData"
           :downloadableImage="sankeySettings.downloadableImage"
+        />
+      </section>
+
+      <!-- ================================================================== -->
+      <!-- WATERFALL CHART -->
+      <!-- ================================================================== -->
+      <section class="chart-section with-settings">
+        <div class="section-header">
+          <h2>Waterfall Chart</h2>
+          <span class="badge">Full Settings</span>
+        </div>
+
+        <div class="settings-panel">
+          <!-- Display -->
+          <div class="settings-group">
+            <h4>Display</h4>
+            <label>
+              Title
+              <input type="text" v-model="waterfallSettings.title" />
+            </label>
+            <label>
+              Subtitle
+              <input type="text" v-model="waterfallSettings.subtitle" />
+            </label>
+          </div>
+
+          <!-- Labels -->
+          <div class="settings-group">
+            <h4>Labels</h4>
+            <label class="checkbox">
+              <input type="checkbox" v-model="waterfallSettings.labels" />
+              Show Labels
+            </label>
+            <label v-if="waterfallSettings.labels">
+              Label Position
+              <select v-model="waterfallSettings.labelPosition">
+                <option value="top">Top</option>
+                <option value="inside">Inside</option>
+              </select>
+            </label>
+          </div>
+
+          <!-- Total -->
+          <div class="settings-group">
+            <h4>Total Bar</h4>
+            <label class="checkbox">
+              <input type="checkbox" v-model="waterfallSettings.showTotal" />
+              Show Total
+            </label>
+            <label v-if="waterfallSettings.showTotal">
+              Total Label
+              <input type="text" v-model="waterfallSettings.totalLabel" />
+            </label>
+          </div>
+
+          <!-- Connector Lines -->
+          <div class="settings-group">
+            <h4>Connector Lines</h4>
+            <label class="checkbox">
+              <input type="checkbox" v-model="waterfallSettings.connectorLines" />
+              Show Connectors
+            </label>
+          </div>
+
+          <!-- Axis -->
+          <div class="settings-group">
+            <h4>Axis</h4>
+            <label class="checkbox">
+              <input type="checkbox" v-model="waterfallSettings.xAxisLabels" />
+              X-Axis Labels
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" v-model="waterfallSettings.yAxisLabels" />
+              Y-Axis Labels
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" v-model="waterfallSettings.xGridlines" />
+              X Gridlines
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" v-model="waterfallSettings.yGridlines" />
+              Y Gridlines
+            </label>
+          </div>
+
+          <!-- Style -->
+          <div class="settings-group">
+            <h4>Style</h4>
+            <label>
+              Fill Opacity
+              <input type="range" v-model.number="waterfallSettings.fillOpacity" min="0" max="1" step="0.1" />
+              {{ waterfallSettings.fillOpacity }}
+            </label>
+          </div>
+
+          <!-- Download -->
+          <div class="settings-group">
+            <h4>Export</h4>
+            <label class="checkbox">
+              <input type="checkbox" v-model="waterfallSettings.downloadableData" />
+              Downloadable Data
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" v-model="waterfallSettings.downloadableImage" />
+              Downloadable Image
+            </label>
+          </div>
+        </div>
+
+        <WaterfallChart
+          :data="waterfallData"
+          x="category"
+          y="amount"
+          :title="waterfallSettings.title"
+          :subtitle="waterfallSettings.subtitle || undefined"
+          yFmt="usd0k"
+          height="400px"
+          :labels="waterfallSettings.labels"
+          :labelPosition="waterfallSettings.labelPosition"
+          :showTotal="waterfallSettings.showTotal"
+          :totalLabel="waterfallSettings.totalLabel"
+          :connectorLines="waterfallSettings.connectorLines"
+          :xAxisLabels="waterfallSettings.xAxisLabels"
+          :yAxisLabels="waterfallSettings.yAxisLabels"
+          :xGridlines="waterfallSettings.xGridlines"
+          :yGridlines="waterfallSettings.yGridlines"
+          :fillOpacity="waterfallSettings.fillOpacity"
+          :downloadableData="waterfallSettings.downloadableData"
+          :downloadableImage="waterfallSettings.downloadableImage"
         />
       </section>
     </main>

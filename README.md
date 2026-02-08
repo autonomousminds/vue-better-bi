@@ -6,7 +6,7 @@ A Vue 3 charting library built on Apache ECharts with advanced formatting, themi
 
 ## Features
 
-- **16 Chart Types**: Bar, Line, Area, Scatter, Bubble, Box Plot, Histogram, Funnel, Heatmap, Calendar Heatmap, Sankey, US Map, Area Map, Point Map, Bubble Map
+- **18 Chart Types**: Bar, Line, Area, Scatter, Bubble, Box Plot, Histogram, Funnel, Pie, Heatmap, Calendar Heatmap, Sankey, Waterfall, US Map, Area Map, Point Map, Bubble Map
 - **100+ Built-in Formats**: Currencies (USD, EUR, GBP, etc.), dates, numbers, percentages with automatic scaling (k, M, B, T)
 - **Light/Dark Theme Support**: Automatic system detection with manual toggle
 - **Export Options**: PNG, JPEG, CSV download and clipboard copy
@@ -77,6 +77,9 @@ const data = [
 | `BoxPlot` | Statistical box plots |
 | `Histogram` | Automatic binning |
 | `FunnelChart` | Funnel/pipeline visualization |
+| `PieChart` | Pie and donut charts with configurable labels and legend |
+
+> **Note:** `ScatterPlot` and `BubbleChart` both use ECharts' scatter series. `BubbleChart` adds a `size` prop that maps a data column to point sizes (`minSize`–`maxSize`), making it a scatter plot with a third dimension.
 
 ### Specialized Charts
 
@@ -85,6 +88,7 @@ const data = [
 | `Heatmap` | 2D heatmap with color scales |
 | `CalendarHeatmap` | Calendar-based heatmap for time series |
 | `SankeyDiagram` | Flow visualization |
+| `WaterfallChart` | Cumulative positive/negative value breakdown |
 
 ### Maps
 
@@ -269,6 +273,96 @@ configureThemes({
   :valueLabels="true"
   zeroDisplay="0"
   colorScale="blue"
+/>
+```
+
+### Pie Chart Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `data` | `Array` | required | Data array |
+| `name` | `string` | first column | Column for slice labels |
+| `value` | `string` | second column | Column for slice values |
+| `donut` | `boolean` | `false` | Render as donut chart (inner radius 50%) |
+| `innerRadius` | `string \| number` | - | Custom inner radius (e.g. `'40%'`). Overrides `donut` default |
+| `labels` | `boolean` | `true` | Show labels on slices |
+| `labelPosition` | `'inside' \| 'outside'` | `'outside'` | Where to render labels |
+| `showPercent` | `boolean` | `true` | Show percentage in labels and tooltip |
+| `legendPosition` | `'top' \| 'bottom' \| 'left' \| 'right'` | `'top'` | Legend position (pie auto-adjusts to avoid overlap) |
+| `valueFmt` | `string` | - | Format for values in tooltip |
+| `percentFmt` | `string` | `'pct1'` | Format for percentages |
+| `colorPalette` | `string \| string[]` | `'default'` | Color palette for slices |
+
+```vue
+<!-- Basic pie chart -->
+<PieChart
+  :data="data"
+  name="category"
+  value="revenue"
+  title="Revenue by Category"
+  valueFmt="usd0k"
+/>
+
+<!-- Donut chart with inside labels -->
+<PieChart
+  :data="data"
+  name="category"
+  value="revenue"
+  title="Revenue Breakdown"
+  :donut="true"
+  labelPosition="inside"
+  legendPosition="right"
+/>
+
+<!-- Custom inner radius -->
+<PieChart
+  :data="data"
+  name="category"
+  value="revenue"
+  :donut="true"
+  innerRadius="30%"
+/>
+```
+
+### Waterfall Chart Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `data` | `Array` | required | Data array |
+| `x` | `string` | required | Column for category labels |
+| `y` | `string` | required | Column for values (positive = increase, negative = decrease) |
+| `positiveColor` | `ColorInput` | `'#4CAF50'` | Color for increase bars |
+| `negativeColor` | `ColorInput` | `'#F44336'` | Color for decrease bars |
+| `totalColor` | `ColorInput` | `'#2196F3'` | Color for total/subtotal bars |
+| `showTotal` | `boolean` | `true` | Auto-add a total bar at the end |
+| `totalLabel` | `string` | `'Total'` | Label for the auto-total bar |
+| `totalColumn` | `string` | - | Column name that marks rows as totals (boolean column) |
+| `labels` | `boolean` | `false` | Show value labels on bars |
+| `labelPosition` | `'top' \| 'inside'` | `'top'` | Label position |
+| `connectorLines` | `boolean` | `true` | Show dashed lines connecting bar tops |
+| `connectorLineType` | `'solid' \| 'dashed' \| 'dotted'` | `'dashed'` | Connector line style |
+| `fillOpacity` | `number` | `1` | Bar fill opacity (0-1) |
+
+```vue
+<!-- P&L waterfall -->
+<WaterfallChart
+  :data="data"
+  x="category"
+  y="amount"
+  title="Profit & Loss Waterfall"
+  yFmt="usd0k"
+  :labels="true"
+  :showTotal="true"
+  totalLabel="Net Income"
+/>
+
+<!-- With explicit total rows in data -->
+<WaterfallChart
+  :data="data"
+  x="category"
+  y="amount"
+  totalColumn="isTotal"
+  :showTotal="false"
 />
 ```
 
