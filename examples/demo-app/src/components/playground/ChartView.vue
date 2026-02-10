@@ -6,7 +6,8 @@ import {
   BarChart, LineChart, AreaChart, ScatterPlot, BubbleChart,
   BoxPlot, Histogram, FunnelChart, PieChart, Heatmap,
   CalendarHeatmap, SankeyDiagram, WaterfallChart,
-  USMap, PointMap, BubbleMap
+  USMap, PointMap, BubbleMap,
+  DataTable, Column
 } from 'vue-better-echarts';
 
 const componentMap: Record<string, Component> = {
@@ -14,6 +15,7 @@ const componentMap: Record<string, Component> = {
   BoxPlot, Histogram, FunnelChart, PieChart, Heatmap,
   CalendarHeatmap, SankeyDiagram, WaterfallChart,
   USMap, PointMap, BubbleMap,
+  DataTable,
 };
 
 // World GeoJSON needs to be registered for PointMap/BubbleMap
@@ -100,7 +102,14 @@ function topoGeoToGeoJSON(
   return { type, coordinates: [] };
 }
 
-const { currentChart, assembledProps, currentData } = usePlaygroundState();
+const { currentChart, assembledProps, assembledColumnConfigs, currentData } = usePlaygroundState();
+
+const isTable = computed(() => currentChart.value.componentName === 'DataTable');
+
+const activeColumnEntries = computed(() => {
+  const configs = assembledColumnConfigs.value;
+  return Object.entries(configs);
+});
 
 const needsWorldMap = computed(() =>
   currentChart.value.componentName === 'PointMap' || currentChart.value.componentName === 'BubbleMap'
@@ -125,6 +134,25 @@ watch(needsWorldMap, (needs) => {
     <div v-if="needsWorldMap && !ready" class="chart-loading">
       Loading world map...
     </div>
+
+    <!-- DataTable has its own rendering (no ECharts) -->
+    <DataTable
+      v-else-if="isTable && activeColumnEntries.length > 0"
+      :data="(currentData as Record<string, unknown>[])"
+      v-bind="assembledProps"
+    >
+      <Column
+        v-for="[colId, colProps] in activeColumnEntries"
+        :key="colId"
+        v-bind="colProps"
+      />
+    </DataTable>
+    <DataTable
+      v-else-if="isTable"
+      :data="(currentData as Record<string, unknown>[])"
+      v-bind="assembledProps"
+    />
+
     <component
       v-else-if="chartComponent"
       :is="chartComponent"

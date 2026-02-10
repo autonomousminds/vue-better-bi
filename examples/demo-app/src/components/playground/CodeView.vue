@@ -5,11 +5,12 @@ import { useCodeGenerator } from '../../composables/useCodeGenerator';
 import { highlightVueSFC } from '../../composables/useSyntaxHighlight';
 import CopyButton from '../common/CopyButton.vue';
 
-const { currentChart, currentState, currentData } = usePlaygroundState();
+const { currentChart, currentState, currentData, assembledColumnConfigs } = usePlaygroundState();
 const { generatedCode } = useCodeGenerator(
   () => currentChart.value,
   () => currentState.value,
   () => currentData.value,
+  () => assembledColumnConfigs.value,
 );
 
 const highlightedCode = computed(() => highlightVueSFC(generatedCode.value));

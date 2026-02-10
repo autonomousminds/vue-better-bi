@@ -26,6 +26,7 @@ export function useCodeGenerator(
   chart: () => ChartDefinition,
   state: () => Record<string, unknown>,
   data: () => Record<string, unknown>[],
+  columnConfigs?: () => Record<string, Record<string, unknown>>,
 ) {
   const generatedCode = computed(() => {
     const c = chart();
@@ -91,6 +92,14 @@ export function useCodeGenerator(
       if (line) propLines.push(line);
     }
 
+    // Check for column configs
+    const colConfigs = columnConfigs ? columnConfigs() : {};
+    const hasColumnConfigs = Object.keys(colConfigs).length > 0;
+
+    if (hasColumnConfigs) {
+      imports.push('Column');
+    }
+
     // Build script section
     let script = `<script setup>\n`;
     script += `import { ${imports.join(', ')} } from 'vue-better-echarts'\n\n`;
@@ -112,9 +121,52 @@ export function useCodeGenerator(
 
     // Build template
     let template = `\n\n<template>\n`;
-    template += `  <${componentName}\n`;
-    template += propLines.join('\n') + '\n';
-    template += `  />\n`;
+
+    if (hasColumnConfigs) {
+      template += `  <${componentName}\n`;
+      template += propLines.join('\n') + '\n';
+      template += `  >\n`;
+
+      for (const [colId, colProps] of Object.entries(colConfigs)) {
+        const props = colProps as Record<string, unknown>;
+        // Only emit detailed Column tags for columns with more than just { id }
+        const propKeys = Object.keys(props).filter(k => k !== 'id');
+        if (propKeys.length === 0) continue;
+
+        const colPropParts: string[] = [`id="${colId}"`];
+        for (const key of propKeys) {
+          const val = props[key];
+          if (val === undefined || val === '' || val === false) continue;
+          if (val === true) {
+            colPropParts.push(key);
+          } else if (typeof val === 'number') {
+            colPropParts.push(`:${key}="${val}"`);
+          } else if (Array.isArray(val)) {
+            const items = val.map(v => typeof v === 'string' ? `'${v}'` : v).join(', ');
+            colPropParts.push(`:${key}="[${items}]"`);
+          } else {
+            colPropParts.push(`${key}="${val}"`);
+          }
+        }
+
+        if (colPropParts.length <= 3) {
+          template += `    <Column ${colPropParts.join(' ')} />\n`;
+        } else {
+          template += `    <Column\n`;
+          for (const part of colPropParts) {
+            template += `      ${part}\n`;
+          }
+          template += `    />\n`;
+        }
+      }
+
+      template += `  </${componentName}>\n`;
+    } else {
+      template += `  <${componentName}\n`;
+      template += propLines.join('\n') + '\n';
+      template += `  />\n`;
+    }
+
     template += `</template>`;
 
     return script + template;

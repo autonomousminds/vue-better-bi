@@ -7,6 +7,7 @@ A Vue 3 charting library built on Apache ECharts with advanced formatting, themi
 ## Features
 
 - **18 Chart Types**: Bar, Line, Area, Scatter, Bubble, Box Plot, Histogram, Funnel, Pie, Heatmap, Calendar Heatmap, Sankey, Waterfall, US Map, Area Map, Point Map, Bubble Map
+- **DataTable Component**: Full-featured data table with sorting, pagination, search, grouping, totals, column formatting, and rich content types (bars, deltas, sparklines, color scales)
 - **100+ Built-in Formats**: Currencies (USD, EUR, GBP, etc.), dates, numbers, percentages with automatic scaling (k, M, B, T)
 - **Light/Dark Theme Support**: Automatic system detection with manual toggle
 - **Export Options**: PNG, JPEG, CSV download and clipboard copy
@@ -98,6 +99,13 @@ const data = [
 | `AreaMap` | Custom GeoJSON choropleth |
 | `PointMap` | Point markers on world map |
 | `BubbleMap` | Sized bubbles on world map |
+
+### Data Table
+
+| Component | Description |
+|-----------|-------------|
+| `DataTable` | Full-featured data table with sorting, pagination, search, grouping, and rich column content types |
+| `Column` | Declarative column configuration for DataTable (renderless) |
 
 ### Reference Components
 
@@ -409,6 +417,241 @@ Two waterfall types are supported via `waterfallType`:
 />
 ```
 
+## DataTable
+
+A full-featured data table component with sorting, pagination, search, grouping, totals, and rich column content types.
+
+### Basic Usage
+
+```vue
+<script setup>
+import { DataTable } from 'vue-better-echarts';
+
+const data = [
+  { name: 'Alice', department: 'Engineering', salary: 125000, change: 0.08 },
+  { name: 'Bob', department: 'Marketing', salary: 95000, change: -0.03 },
+  { name: 'Carol', department: 'Engineering', salary: 142000, change: 0.12 },
+  { name: 'Dave', department: 'Sales', salary: 88000, change: 0.05 },
+];
+</script>
+
+<template>
+  <!-- Auto-generates columns from data keys -->
+  <DataTable :data="data" title="Team Directory" />
+</template>
+```
+
+### Custom Columns
+
+Use `<Column>` children to control which columns appear, their order, formatting, and content types:
+
+```vue
+<script setup>
+import { DataTable, Column } from 'vue-better-echarts';
+</script>
+
+<template>
+  <DataTable :data="data" title="Team Compensation" :search="true">
+    <Column id="name" title="Employee" />
+    <Column id="department" />
+    <Column id="salary" fmt="usd0" totalAgg="mean" />
+    <Column id="change" contentType="delta" fmt="pct1" />
+  </DataTable>
+</template>
+```
+
+### DataTable Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `data` | `Record<string, unknown>[]` | required | Data array |
+| `rows` | `number \| 'all'` | `10` | Rows per page. Use `'all'` to disable pagination |
+| `title` | `string` | - | Table title |
+| `subtitle` | `string` | - | Subtitle below the title |
+| `search` | `boolean` | `false` | Enable search bar |
+| `sortable` | `boolean` | `true` | Allow column header click to sort |
+| `sort` | `string` | - | Default sort: `"column"` or `"column desc"` |
+| `downloadable` | `boolean` | `true` | Show CSV download button |
+| `rowNumbers` | `boolean` | `false` | Show row index numbers |
+| `totalRow` | `boolean` | `false` | Show summary total row |
+| `compact` | `boolean` | `false` | Reduce padding and font size |
+| `rowShading` | `boolean` | `false` | Alternate row background shading |
+| `rowLines` | `boolean` | `true` | Show borders between rows |
+| `wrapTitles` | `boolean` | `false` | Allow column titles to wrap |
+| `formatColumnTitles` | `boolean` | `true` | Auto-format titles from `snake_case` to `Title Case` |
+| `link` | `string` | - | Column containing URL to make rows clickable |
+| `showLinkCol` | `boolean` | `false` | Show the link column (hidden by default) |
+| `emptySet` | `'error' \| 'warn' \| 'pass'` | `'error'` | Empty data behavior |
+| `emptyMessage` | `string` | `'No records'` | Message shown when data is empty |
+
+#### Grouping Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `groupBy` | `string` | - | Column to group rows by |
+| `groupType` | `'accordion' \| 'section'` | `'accordion'` | Group display mode |
+| `groupsOpen` | `boolean` | `true` | Whether groups start expanded |
+| `subtotals` | `boolean` | `false` | Show subtotal row per group |
+| `subtotalFmt` | `string` | - | Table-level format for all subtotals (fallback) |
+| `groupNamePosition` | `'top' \| 'middle' \| 'bottom'` | `'middle'` | Group name position in section mode |
+
+#### Color Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `headerColor` | `string` | Header background color |
+| `headerFontColor` | `string` | Header text color |
+| `backgroundColor` | `string` | Table background color |
+| `totalRowColor` | `string` | Total row background color |
+| `totalFontColor` | `string` | Total row text color |
+| `accordionRowColor` | `string` | Accordion group header background |
+| `subtotalRowColor` | `string` | Subtotal row background |
+| `subtotalFontColor` | `string` | Subtotal row text color |
+
+### Column Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `id` | `string` | required | Column key in data |
+| `title` | `string` | auto | Display title (defaults to formatted `id`) |
+| `description` | `string` | - | Tooltip shown on hover over column header |
+| `align` | `'left' \| 'center' \| 'right'` | auto | Cell alignment (auto-detected from data type) |
+| `fmt` | `string` | auto | Format string (e.g. `'usd0'`, `'pct1'`, `'num2'`) |
+| `fmtColumn` | `string` | - | Column containing per-row format strings |
+| `contentType` | `string` | - | Rich content type (see below) |
+| `totalAgg` | `string` | - | Aggregation for total row: `sum`, `mean`, `median`, `min`, `max`, `count`, `countDistinct`, `weightedMean` |
+| `totalFmt` | `string` | - | Format for total row value |
+| `subtotalFmt` | `string` | - | Format for subtotal row value |
+| `weightCol` | `string` | - | Weight column for `weightedMean` aggregation |
+| `wrap` | `boolean` | `false` | Allow cell content to wrap |
+| `wrapTitle` | `boolean` | `false` | Allow column title to wrap |
+| `colGroup` | `string` | - | Group columns under a shared header |
+| `redNegatives` | `boolean` | `false` | Show negative values in red |
+
+### Column Content Types
+
+#### Bar (`contentType="bar"`)
+
+Renders a horizontal bar in the cell background proportional to the value.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `barColor` | `string` | `'#a5cdee'` | Positive bar color |
+| `negativeBarColor` | `string` | `'#fca5a5'` | Negative bar color |
+| `backgroundColor` | `string` | `'transparent'` | Bar track background |
+| `hideLabels` | `boolean` | `false` | Hide value labels |
+
+```vue
+<Column id="revenue" contentType="bar" fmt="usd0k" barColor="#4ade80" />
+```
+
+#### Delta (`contentType="delta"`)
+
+Shows a value with an up/down indicator and configurable styling.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `downIsGood` | `boolean` | `false` | Flip colors (green for negative) |
+| `showValue` | `boolean` | `true` | Show the numeric value |
+| `deltaSymbol` | `boolean` | `true` | Show up/down arrow |
+| `symbolPosition` | `'left' \| 'right'` | `'right'` | Arrow position relative to value |
+| `neutralMin` | `number` | `0` | Values above this are neutral |
+| `neutralMax` | `number` | `0` | Values below this are neutral |
+| `chip` | `boolean` | `false` | Render as a colored chip/badge |
+| `deltaText` | `string` | - | Trailing label (e.g. `"vs. prev month"`) |
+
+```vue
+<Column id="change" contentType="delta" fmt="pct1" downIsGood chip />
+```
+
+#### Color Scale (`contentType="colorscale"`)
+
+Colors the cell background based on the value using a gradient scale.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `colorScale` | `string \| string[]` | `'default'` | Color scale: named preset (`'default'`, `'positive'`, `'negative'`, `'info'`) or array of hex colors |
+| `colorMin` | `number` | auto | Override minimum value |
+| `colorMax` | `number` | auto | Override maximum value |
+| `colorMid` | `number` | - | Midpoint for diverging scales |
+| `colorBreakpoints` | `number[]` | - | Custom breakpoints |
+| `scaleColumn` | `string` | - | Use another column's values for the scale |
+
+```vue
+<Column id="score" contentType="colorscale" colorScale="positive" />
+```
+
+#### Sparkline / Sparkbar / Sparkarea
+
+Renders a mini chart inside the cell from array data.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `sparkX` | `string` | - | Key for X values in the array data |
+| `sparkY` | `string` | - | Key for Y values in the array data |
+| `sparkColor` | `string` | - | Line/bar/area color |
+| `sparkWidth` | `number` | `50` | Chart width in pixels |
+| `sparkHeight` | `number` | `15` | Chart height in pixels |
+| `sparkYScale` | `boolean` | `false` | Include zero in Y scale |
+| `interactive` | `boolean` | `false` | Enable hover tooltip |
+| `valueFmt` | `string` | - | Tooltip value format |
+| `dateFmt` | `string` | - | Tooltip date format |
+
+```vue
+<Column id="trend" contentType="sparkline" sparkColor="#6366f1" :interactive="true" />
+```
+
+#### Link (`contentType="link"`)
+
+Renders the cell value as a clickable hyperlink.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `linkLabel` | `string` | - | Static label text (overrides cell value) |
+| `openInNewTab` | `boolean` | `false` | Open link in new tab |
+
+#### Image (`contentType="image"`)
+
+Renders the cell value as an image URL.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `height` | `string` | - | Image height |
+| `width` | `string` | - | Image width |
+| `alt` | `string` | - | Alt text |
+
+#### HTML (`contentType="html"`)
+
+Renders the cell value as raw HTML.
+
+### Grouping Example
+
+```vue
+<DataTable
+  :data="data"
+  groupBy="department"
+  groupType="accordion"
+  :subtotals="true"
+  :groupsOpen="true"
+  accordionRowColor="#f8fafc"
+>
+  <Column id="name" />
+  <Column id="department" />
+  <Column id="salary" fmt="usd0" totalAgg="sum" />
+</DataTable>
+```
+
+### Total Row Example
+
+```vue
+<DataTable :data="data" :totalRow="true" totalRowColor="#f0fdf4">
+  <Column id="product" />
+  <Column id="revenue" fmt="usd0" totalAgg="sum" />
+  <Column id="margin" fmt="pct1" totalAgg="mean" />
+  <Column id="growth" contentType="delta" fmt="pct1" totalAgg="mean" />
+</DataTable>
+```
+
 ## Interactive Features
 
 Structured props for common ECharts interactive features. These provide a cleaner API than raw `echartsOptions` passthrough with full TypeScript support and sensible defaults.
@@ -645,6 +888,11 @@ The playground uses a three-panel layout:
 - `EChartsBase` - Base ECharts wrapper component
 - `ChartProvider` - Context provider for nested components
 - `ChartFooter` - Download buttons component
+
+### Table Components
+
+- `DataTable` - Full-featured data table with sorting, pagination, search, grouping, totals, and rich content types
+- `Column` - Declarative column configuration (renderless, used as child of DataTable)
 
 ## License
 

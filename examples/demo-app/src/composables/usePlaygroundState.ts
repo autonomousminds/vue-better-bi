@@ -1,5 +1,5 @@
 import { ref, computed, reactive, watch, onMounted } from 'vue';
-import type { ChartDefinition, PropDefinition } from '../types/playground.types';
+import type { ChartDefinition, PropDefinition, ColumnConfig } from '../types/playground.types';
 import { chartRegistry, chartCategories } from '../data/chartRegistry';
 import { sampleDatasets } from '../data/sampleData';
 
@@ -19,6 +19,7 @@ function initializeState(props: PropDefinition[]): Record<string, unknown> {
 const selectedChartId = ref('bar-chart');
 const activeTab = ref<'chart' | 'code' | 'data'>('chart');
 const chartStates = reactive<Record<string, Record<string, unknown>>>({});
+const columnConfigStates = reactive<Record<string, Record<string, ColumnConfig>>>({});
 const settingsSearch = ref('');
 
 const currentChart = computed<ChartDefinition>(() =>
@@ -95,16 +96,99 @@ const groupedProps = computed(() => {
   return groups;
 });
 
+// Ensure column config state exists for a chart (called outside of computeds to avoid side effects)
+function ensureColumnConfigState(chartId: string) {
+  if (!columnConfigStates[chartId]) {
+    columnConfigStates[chartId] = {};
+  }
+}
+
+const currentColumnConfigs = computed(() => {
+  const id = selectedChartId.value;
+  return columnConfigStates[id] || {};
+});
+
+const assembledColumnConfigs = computed<Record<string, Record<string, unknown>>>(() => {
+  const configs = currentColumnConfigs.value;
+  const data = currentData.value as Record<string, unknown>[];
+  if (!data || !data.length) return {};
+
+  const anyEnabled = Object.values(configs).some(c => c.enabled);
+  if (!anyEnabled) return {};
+
+  const allColumns = Object.keys(data[0]);
+  const result: Record<string, Record<string, unknown>> = {};
+
+  for (const colId of allColumns) {
+    const config = configs[colId];
+    if (config?.enabled) {
+      const props: Record<string, unknown> = { id: colId };
+
+      if (config.contentType) props.contentType = config.contentType;
+      if (config.title) props.title = config.title;
+      if (config.align) props.align = config.align;
+      if (config.fmt) props.fmt = config.fmt;
+      if (config.totalAgg) props.totalAgg = config.totalAgg;
+      if (config.colGroup) props.colGroup = config.colGroup;
+      if (config.redNegatives) props.redNegatives = true;
+      if (config.description) props.description = config.description;
+
+      if (config.contentType === 'bar') {
+        if (config.barColor) props.barColor = config.barColor;
+        if (config.negativeBarColor) props.negativeBarColor = config.negativeBarColor;
+        if (config.backgroundColor) props.backgroundColor = config.backgroundColor;
+      } else if (config.contentType === 'colorscale') {
+        if (config.colorScale) {
+          const colors = config.colorScale.split(',').map(s => s.trim()).filter(Boolean);
+          if (colors.length > 0) props.colorScale = colors;
+        }
+      } else if (config.contentType === 'delta') {
+        if (config.downIsGood) props.downIsGood = true;
+        if (config.chip) props.chip = true;
+        if (config.symbolPosition && config.symbolPosition !== 'right') {
+          props.symbolPosition = config.symbolPosition;
+        }
+        if (config.deltaText) props.deltaText = config.deltaText;
+      }
+
+      result[colId] = props;
+    } else {
+      result[colId] = { id: colId };
+    }
+  }
+
+  return result;
+});
+
+function updateColumnConfig(colId: string, patch: Partial<ColumnConfig>) {
+  const id = selectedChartId.value;
+  ensureColumnConfigState(id);
+  const configs = columnConfigStates[id];
+  if (!configs[colId]) {
+    configs[colId] = { enabled: false };
+  }
+  Object.assign(configs[colId], patch);
+}
+
+function resetColumnConfig(colId: string) {
+  const id = selectedChartId.value;
+  if (columnConfigStates[id]) {
+    delete columnConfigStates[id][colId];
+  }
+}
+
 function updateProp(name: string, value: unknown) {
   currentState.value[name] = value;
 }
 
 function resetToDefaults() {
   chartStates[selectedChartId.value] = initializeState(currentChart.value.props);
+  delete columnConfigStates[selectedChartId.value];
 }
 
 function selectChart(id: string) {
   selectedChartId.value = id;
+  ensureColumnConfigState(id);
   activeTab.value = 'chart';
 }
 
@@ -118,7 +202,8 @@ function syncFromHash() {
 
 watch(selectedChartId, (id) => {
   window.location.hash = id;
-});
+  ensureColumnConfigState(id);
+}, { immediate: true });
 
 export function usePlaygroundState() {
   onMounted(syncFromHash);
@@ -134,6 +219,10 @@ export function usePlaygroundState() {
     settingsSearch,
     chartRegistry,
     chartCategories,
+    currentColumnConfigs,
+    assembledColumnConfigs,
+    updateColumnConfig,
+    resetColumnConfig,
     updateProp,
     resetToDefaults,
     selectChart,

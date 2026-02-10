@@ -48,3 +48,15 @@ export interface SeriesConfigContext {
 }
 
 export const seriesConfigKey: InjectionKey<SeriesConfigContext> = Symbol('seriesConfig');
+
+/**
+ * Key for providing table context to Column child components
+ */
+export interface TableContext {
+  registerColumn: (config: import('../types/table.types').TableColumnConfig) => void;
+  unregisterColumn: (id: string) => void;
+  updateColumn: (config: import('../types/table.types').TableColumnConfig) => void;
+  data: Record<string, unknown>[];
+}
+
+export const tableContextKey: InjectionKey<TableContext> = Symbol('tableContext');

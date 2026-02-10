@@ -203,6 +203,29 @@ export const cityData = [
   { city: 'Istanbul', lat: 41.0082, long: 28.9784, gdp: 230, population: 15462 }
 ];
 
+export const tableData = [
+  { name: 'Alice Johnson', department: 'Engineering', region: 'West', salary: 125000, growth_pct: 0.12, tenure: 5, rating: 4.5 },
+  { name: 'Bob Smith', department: 'Engineering', region: 'West', salary: 118000, growth_pct: 0.08, tenure: 3, rating: 4.2 },
+  { name: 'Carol Davis', department: 'Engineering', region: 'East', salary: 132000, growth_pct: 0.15, tenure: 7, rating: 4.8 },
+  { name: 'Dan Brown', department: 'Marketing', region: 'West', salary: 95000, growth_pct: -0.03, tenure: 2, rating: 3.9 },
+  { name: 'Eve Wilson', department: 'Marketing', region: 'East', salary: 102000, growth_pct: 0.10, tenure: 4, rating: 4.1 },
+  { name: 'Frank Lee', department: 'Marketing', region: 'East', salary: 89000, growth_pct: -0.05, tenure: 1, rating: 3.7 },
+  { name: 'Grace Kim', department: 'Sales', region: 'West', salary: 108000, growth_pct: 0.22, tenure: 6, rating: 4.6 },
+  { name: 'Hank Jones', department: 'Sales', region: 'East', salary: 97000, growth_pct: 0.18, tenure: 4, rating: 4.3 },
+  { name: 'Ivy Chen', department: 'Sales', region: 'West', salary: 115000, growth_pct: 0.25, tenure: 8, rating: 4.9 },
+  { name: 'Jack Miller', department: 'Engineering', region: 'East', salary: 140000, growth_pct: 0.05, tenure: 10, rating: 4.7 },
+  { name: 'Kate Taylor', department: 'Sales', region: 'East', salary: 91000, growth_pct: -0.02, tenure: 1, rating: 3.8 },
+  { name: 'Leo Martinez', department: 'Marketing', region: 'West', salary: 98000, growth_pct: 0.07, tenure: 3, rating: 4.0 },
+  { name: 'Mia Anderson', department: 'Engineering', region: 'West', salary: 128000, growth_pct: 0.11, tenure: 6, rating: 4.4 },
+  { name: 'Noah Thomas', department: 'Sales', region: 'West', salary: 105000, growth_pct: 0.14, tenure: 5, rating: 4.2 },
+  { name: 'Olivia Jackson', department: 'Marketing', region: 'East', salary: 87000, growth_pct: 0.09, tenure: 2, rating: 4.1 },
+  { name: 'Pete White', department: 'Engineering', region: 'East', salary: 135000, growth_pct: 0.06, tenure: 9, rating: 4.6 },
+  { name: 'Quinn Harris', department: 'Sales', region: 'East', salary: 99000, growth_pct: 0.20, tenure: 3, rating: 4.4 },
+  { name: 'Rose Clark', department: 'Marketing', region: 'West', salary: 93000, growth_pct: -0.01, tenure: 2, rating: 3.6 },
+  { name: 'Sam Lewis', department: 'Engineering', region: 'West', salary: 122000, growth_pct: 0.13, tenure: 4, rating: 4.3 },
+  { name: 'Tina Walker', department: 'Sales', region: 'East', salary: 110000, growth_pct: 0.16, tenure: 7, rating: 4.5 },
+];
+
 export const sampleDatasets: Record<string, Record<string, unknown>[]> = {
   sales: salesData,
   timeSeries: timeSeriesData,
@@ -220,4 +243,5 @@ export const sampleDatasets: Record<string, Record<string, unknown>[]> = {
   areaMap: usMapData,
   pointMap: cityData,
   bubbleMap: cityData,
+  table: tableData,
 };

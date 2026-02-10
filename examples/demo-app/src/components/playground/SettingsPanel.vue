@@ -2,6 +2,7 @@
 import { usePlaygroundState } from '../../composables/usePlaygroundState';
 import ControlGroup from './ControlGroup.vue';
 import PropControl from './PropControl.vue';
+import ColumnConfigPanel from './ColumnConfigPanel.vue';
 
 const { groupedProps, currentState, currentChart, settingsSearch, updateProp, resetToDefaults } = usePlaygroundState();
 
@@ -66,6 +67,9 @@ function isDefaultOpen(groupName: string): boolean {
           </template>
         </ControlGroup>
       </template>
+
+      <!-- Column configuration for DataTable -->
+      <ColumnConfigPanel v-if="currentChart.componentName === 'DataTable'" />
     </div>
   </aside>
 </template>

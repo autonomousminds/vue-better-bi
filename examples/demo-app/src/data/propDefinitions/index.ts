@@ -15,3 +15,4 @@ export { usMapProps } from './usMap';
 export { areaMapProps } from './areaMap';
 export { pointMapProps } from './pointMap';
 export { bubbleMapProps } from './bubbleMap';
+export { dataTableProps } from './dataTable';

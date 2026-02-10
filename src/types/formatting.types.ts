@@ -35,6 +35,14 @@ export interface ColumnUnitSummary {
   median: number;
   maxDecimals: number;
   unitType: 'number' | 'date' | 'string';
+  /** Total count of values (used by DataTable aggregations) */
+  count?: number;
+  /** Count of distinct values (used by DataTable aggregations) */
+  countDistinct?: number;
+  /** Arithmetic mean (used by DataTable aggregations) */
+  mean?: number;
+  /** Sum of all values (used by DataTable aggregations) */
+  sum?: number;
 }
 
 export interface CurrencyDefinition {

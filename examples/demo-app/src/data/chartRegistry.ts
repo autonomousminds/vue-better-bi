@@ -6,6 +6,7 @@ import {
   heatmapProps, calendarHeatmapProps, sankeyDiagramProps,
   waterfallChartProps, usMapProps,
   pointMapProps, bubbleMapProps,
+  dataTableProps,
 } from './propDefinitions';
 
 export const chartRegistry: ChartDefinition[] = [
@@ -153,6 +154,15 @@ export const chartRegistry: ChartDefinition[] = [
     props: bubbleMapProps,
     sampleDataKey: 'bubbleMap',
   },
+  {
+    id: 'data-table', name: 'Data Table', componentName: 'DataTable',
+    category: 'Tables',
+    description: 'Full-featured data table with sorting, pagination, search, grouping, and totals',
+    dataBindings: {},
+    supportsReferences: false,
+    props: dataTableProps,
+    sampleDataKey: 'table',
+  },
 ];
 
 export const chartCategories = [
@@ -161,4 +171,5 @@ export const chartCategories = [
   'Part-to-Whole',
   'Relational',
   'Maps',
+  'Tables',
 ] as const;
