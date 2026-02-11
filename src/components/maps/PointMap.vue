@@ -53,10 +53,8 @@ function buildTooltip(item: typeof pointData.value[number]): string {
   if (item.name) {
     html += `<div class="tooltip-row"><span class="tooltip-label">${item.name}</span></div>`;
   }
-  html += `<div class="tooltip-row"><span class="tooltip-label">Lat</span> <span>${item.lat.toFixed(4)}</span></div>`;
-  html += `<div class="tooltip-row"><span class="tooltip-label">Long</span> <span>${item.lng.toFixed(4)}</span></div>`;
-  if (item.value != null) {
-    html += `<div class="tooltip-row"><span class="tooltip-label">Value</span> <span>${formatValue(item.value, valueFormat.value)}</span></div>`;
+  if (item.value != null && props.value) {
+    html += `<div class="tooltip-row"><span class="tooltip-label">${props.value}</span> <span>${formatValue(item.value, valueFormat.value)}</span></div>`;
   }
   return html;
 }

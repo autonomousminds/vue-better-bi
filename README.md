@@ -1,12 +1,13 @@
 # Vue ECharts Charts
 
-A Vue 3 charting library built on Apache ECharts with advanced formatting, theming, and export capabilities.
+A Vue 3 charting library built on Apache ECharts and Leaflet.js with advanced formatting, theming, and export capabilities.
 
 > This library was inspired by [evidence.dev](https://evidence.dev) charts.
 
 ## Features
 
 - **18 Chart Types**: Bar, Line, Area, Scatter, Bubble, Box Plot, Histogram, Funnel, Pie, Heatmap, Calendar Heatmap, Sankey, Waterfall, US Map, Area Map, Point Map, Bubble Map
+- **Interactive Maps**: PointMap and BubbleMap use Leaflet.js with CartoDB tile basemaps — real zoomable maps down to street level (dynamically loaded, no bundle bloat)
 - **DataTable Component**: Full-featured data table with sorting, pagination, search, grouping, totals, column formatting, and rich content types (bars, deltas, sparklines, color scales)
 - **100+ Built-in Formats**: Currencies (USD, EUR, GBP, etc.), dates, numbers, percentages with automatic scaling (k, M, B, T)
 - **Light/Dark Theme Support**: Automatic system detection with manual toggle
@@ -93,12 +94,14 @@ const data = [
 
 ### Maps
 
-| Component | Description |
-|-----------|-------------|
-| `USMap` | US choropleth map |
-| `AreaMap` | Custom GeoJSON choropleth |
-| `PointMap` | Point markers on world map |
-| `BubbleMap` | Sized bubbles on world map |
+| Component | Engine | Description |
+|-----------|--------|-------------|
+| `PointMap` | Leaflet | Point markers at lat/long coordinates on an interactive tile basemap |
+| `BubbleMap` | Leaflet | Sized bubble markers at lat/long coordinates on an interactive tile basemap |
+| `USMap` | ECharts | US state choropleth map |
+| `AreaMap` | ECharts | Custom GeoJSON choropleth map |
+
+> **Note:** `PointMap` and `BubbleMap` use [Leaflet.js](https://leafletjs.com/) with CartoDB tile basemaps, providing real interactive maps with smooth zoom down to street level. Leaflet is dynamically imported and only loaded when a map component renders. `USMap` and `AreaMap` use ECharts.
 
 ### Data Table
 
@@ -874,12 +877,112 @@ The playground uses a three-panel layout:
 | **Center area** | Chart/Code/Data tabs with chart info header |
 | **Right panel** | Settings panel with all props for the selected chart type |
 
+## Maps
+
+### PointMap
+
+Renders point markers at lat/long coordinates on an interactive Leaflet tile basemap. Works with any data that has latitude and longitude columns — cities, countries, addresses, etc.
+
+```vue
+<PointMap
+  :data="data"
+  lat="latitude"
+  long="longitude"
+  name="country"
+  value="gdp"
+  valueFmt="usd0k"
+  title="GDP by Country"
+  pointColor="#e63946"
+  :pointSize="10"
+  :pointOpacity="0.8"
+/>
+```
+
+#### PointMap Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `data` | `Array` | required | Data array |
+| `lat` | `string` | required | Column name for latitude values |
+| `long` | `string` | required | Column name for longitude values |
+| `name` | `string` | - | Column name for point labels (shown in tooltip) |
+| `value` | `string` | - | Column name for point values (shown in tooltip) |
+| `valueFmt` | `string` | - | Format string for values |
+| `title` | `string` | - | Chart title |
+| `subtitle` | `string` | - | Chart subtitle |
+| `height` | `string` | `'500px'` | Map height |
+| `width` | `string` | `'100%'` | Map width |
+| `basemap` | `string` | CartoDB Light | Tile layer URL template |
+| `pointColor` | `ColorInput` | `'#3366cc'` | Marker fill color |
+| `pointOpacity` | `number` | `0.8` | Marker fill opacity (0-1) |
+| `pointSize` | `number` | `8` | Marker radius in pixels |
+| `borderColor` | `string` | `'#fff'` | Marker border color |
+| `borderWidth` | `number` | `1` | Marker border width |
+| `tooltipType` | `'hover' \| 'click'` | `'hover'` | Tooltip trigger mode |
+| `startingLat` | `number` | - | Initial map center latitude |
+| `startingLong` | `number` | - | Initial map center longitude |
+| `startingZoom` | `number` | - | Initial map zoom level |
+
+### BubbleMap
+
+Like PointMap but with a `size` column that scales marker radius, useful for showing magnitude (population, revenue, etc.).
+
+```vue
+<BubbleMap
+  :data="data"
+  lat="latitude"
+  long="longitude"
+  name="country"
+  value="gdp"
+  size="population"
+  sizeFmt="num0k"
+  title="World Population"
+  :minSize="5"
+  :maxSize="40"
+  :pointOpacity="0.6"
+/>
+```
+
+#### BubbleMap Props
+
+Inherits all PointMap props, plus:
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `size` | `string` | required | Column name for bubble size values |
+| `sizeFmt` | `string` | - | Format string for size values in tooltip |
+| `minSize` | `number` | `5` | Minimum bubble radius in pixels |
+| `maxSize` | `number` | `40` | Maximum bubble radius in pixels |
+
+### Custom Basemaps
+
+Both `PointMap` and `BubbleMap` accept a `basemap` prop for custom tile layers:
+
+```vue
+<!-- OpenStreetMap -->
+<PointMap
+  :data="data"
+  lat="lat"
+  long="long"
+  basemap="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+/>
+
+<!-- CartoDB Dark -->
+<PointMap
+  :data="data"
+  lat="lat"
+  long="long"
+  basemap="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+/>
+```
+
 ## API
 
 ### Composables
 
 - `useTheme()` - Theme management
 - `useECharts()` - Direct ECharts instance management
+- `useLeafletMap()` - Leaflet map lifecycle management (used internally by PointMap/BubbleMap)
 - `useFormatting()` - Value formatting utilities
 - `useExport()` - Export functionality
 
