@@ -147,6 +147,7 @@ const areaSeriesConfig = computed<Partial<SeriesConfig>>(() => {
   };
 });
 
+
 // Generate series
 const seriesData = computed(() => {
   if (!props.x || !props.y) return [];
