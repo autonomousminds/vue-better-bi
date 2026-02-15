@@ -17,9 +17,8 @@ A Vue 3 charting library built on Apache ECharts and Leaflet.js with advanced fo
 - **Reference Components**: Add reference lines, areas, and points to charts
 
 ## Installation
-
 ```bash
-npm install vue-better-echarts echarts
+npm install github:autonomousminds/vue-better-echarts echarts
 ```
 
 ## Quick Start
