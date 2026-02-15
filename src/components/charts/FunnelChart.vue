@@ -24,7 +24,7 @@ const emit = defineEmits<{
   (e: 'click', params: unknown): void;
 }>();
 
-const { activeAppearance, resolveColorPalette } = useThemeStores();
+const { resolveColorPalette } = useThemeStores();
 
 // Resolve colors
 const colorPaletteResolved = computed(() =>
@@ -61,20 +61,12 @@ const maxValue = computed(() => {
 // Build chart config
 const chartConfig = computed<EChartsOption>(() => {
   // Calculate chart area
-  const hasTitle = !!props.title;
-  const hasSubtitle = !!props.subtitle;
   const hasLegend = props.legend;
-
-  const titleBoxHeight = (hasTitle ? 15 : 0) + (hasSubtitle ? 13 : 0) + (hasTitle || hasSubtitle ? 6 : 0);
   const legendHeight = hasLegend ? 25 : 0;
-  const legendTop = titleBoxHeight + 7;
+  const legendTop = 7;
   const chartTop = legendTop + legendHeight + 10;
 
   return {
-    title: {
-      text: props.title,
-      subtext: props.subtitle
-    },
     tooltip: {
       trigger: 'item' as const,
       formatter: (params: unknown) => {
@@ -153,7 +145,6 @@ const hovering = ref(false);
     :subtitle="props.subtitle"
     :height="props.height"
     :width="props.width"
-    :theme="activeAppearance"
     :renderer="props.renderer"
     :echarts-options="props.echartsOptions"
     :background-color="props.backgroundColor"
@@ -166,7 +157,6 @@ const hovering = ref(false);
         :config="chartConfig"
         :data="props.data"
         :chart-title="props.title"
-        :theme="activeAppearance"
         :echarts-options="props.echartsOptions"
         :downloadable-data="props.downloadableData"
         :downloadable-image="props.downloadableImage"

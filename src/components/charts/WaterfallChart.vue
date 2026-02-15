@@ -34,7 +34,7 @@ const emit = defineEmits<{
   (e: 'click', params: unknown): void;
 }>();
 
-const { activeAppearance, resolveColor, resolveColorsObject } = useThemeStores();
+const { resolveColor, resolveColorsObject } = useThemeStores();
 
 // Interactive features
 const {
@@ -377,7 +377,6 @@ const hovering = ref(false);
     :subtitle="props.subtitle"
     :height="props.height"
     :width="props.width"
-    :theme="activeAppearance"
     :renderer="props.renderer"
     :connect-group="props.connectGroup"
     :series-colors="seriesColorsResolved as Record<string, string>"
@@ -395,7 +394,6 @@ const hovering = ref(false);
         :config="chartConfig"
         :data="processedData"
         :chart-title="props.title"
-        :theme="activeAppearance"
         :series-colors="seriesColorsResolved as Record<string, string>"
         :echarts-options="props.echartsOptions"
         :series-options="props.seriesOptions"

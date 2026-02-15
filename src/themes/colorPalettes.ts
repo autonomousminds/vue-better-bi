@@ -1,16 +1,14 @@
 /**
  * Color palette and resolution utilities
- * Supports light/dark modes and named color palettes
  */
 
 import chroma from 'chroma-js';
 import type {
-  Appearance,
   ColorPaletteInput,
   ColorScaleInput,
   Theme
 } from '../types';
-import { getThemes } from './echartsThemes';
+import { getTheme } from './echartsThemes';
 
 /**
  * Checks if input is a string tuple [string] or [string, string]
@@ -24,91 +22,37 @@ function isStringTuple(input: unknown): input is [string] | [string, string] {
 }
 
 /**
- * Converts a light color to a dark mode equivalent
- * Simple implementation - can be extended for more sophisticated conversion
- */
-export function convertLightToDark(color: string): string | undefined {
-  if (!color) return undefined;
-
-  try {
-    // Validate the color
-    if (!chroma.valid(color)) {
-      return color;
-    }
-
-    const chromaColor = chroma(color);
-    const luminance = chromaColor.luminance();
-
-    // If the color is already dark, lighten it slightly
-    if (luminance < 0.3) {
-      return chromaColor.brighten(0.5).hex();
-    }
-
-    // For light colors, invert or darken based on hue
-    const hsl = chromaColor.hsl();
-    const [h, s, l] = hsl;
-
-    // Invert the lightness while preserving hue and reducing saturation slightly
-    const newL = 1 - l;
-    const newS = Math.min(s * 0.9, 1);
-
-    return chroma.hsl(h || 0, newS, newL).hex();
-  } catch {
-    return color;
-  }
-}
-
-/**
- * Resolves a color input to an actual color string based on appearance
+ * Resolves a color input to an actual color string
  */
 export function resolveColor<T>(
-  input: T,
-  appearance: Appearance
+  input: T
 ): string | T | undefined {
-  const themes = getThemes();
+  const currentTheme = getTheme();
 
   if (typeof input === 'string') {
-    const lightColor = themes.light.colors[input.trim()];
-    const darkColor = themes.dark.colors[input.trim()];
-
-    if (appearance === 'light') {
-      return lightColor ?? input;
-    }
-    if (appearance === 'dark') {
-      return darkColor ?? convertLightToDark(lightColor ?? input) ?? input;
-    }
+    return currentTheme.colors[input.trim()] ?? input;
   }
 
   if (isStringTuple(input)) {
-    const [light, dark] = input;
-
-    const lightColor = themes.light.colors[light.trim()];
-    const darkColor = dark ? (themes.dark.colors[dark.trim()] ?? dark) : undefined;
-
-    if (appearance === 'light') {
-      return lightColor ?? light;
-    }
-    if (appearance === 'dark') {
-      return darkColor ?? convertLightToDark(lightColor ?? light) ?? dark;
-    }
+    const [light] = input;
+    return currentTheme.colors[light.trim()] ?? light;
   }
 
   return undefined;
 }
 
 /**
- * Resolves an object of colors to their actual values based on appearance
+ * Resolves an object of colors to their actual values
  */
 export function resolveColorsObject<T>(
-  input: Record<string, T> | undefined,
-  appearance: Appearance
+  input: Record<string, T> | undefined
 ): Record<string, string | T | undefined> | undefined {
   if (!input) return undefined;
 
   return Object.fromEntries(
     Object.entries(input).map(([key, color]) => [
       key,
-      resolveColor(color, appearance)
+      resolveColor(color)
     ])
   );
 }

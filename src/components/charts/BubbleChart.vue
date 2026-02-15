@@ -31,21 +31,8 @@ const emit = defineEmits<{
   (e: 'click', params: unknown): void;
 }>();
 
-const { activeAppearance, resolveColor, resolveColorPalette, resolveColorsObject } = useThemeStores();
+const { resolveColor, resolveColorPalette, resolveColorsObject } = useThemeStores();
 const { scatterFormatter } = useTooltip();
-
-// Process chart configuration
-const {
-  processedData,
-  columnSummary,
-  xAxisType: _xAxisType,
-  baseConfig,
-  formats,
-  unitSummaries: _unitSummaries
-} = useChartConfig(props, {
-  chartType: 'Bubble Chart',
-  xType: props.xType || 'value'
-});
 
 // Resolve colors
 const pointColorResolved = computed(() =>
@@ -60,6 +47,28 @@ const colorPaletteResolved = computed(() =>
 const seriesColorsResolved = computed(() =>
   props.seriesColors ? resolveColorsObject(props.seriesColors).value : undefined
 );
+const yAxisColorResolved = computed(() =>
+  props.yAxisColor ? resolveColor(props.yAxisColor).value : undefined
+);
+const y2AxisColorResolved = computed(() =>
+  props.y2AxisColor ? resolveColor(props.y2AxisColor).value : undefined
+);
+
+// Process chart configuration
+const {
+  processedData,
+  columnSummary,
+  xAxisType: _xAxisType,
+  baseConfig,
+  formats,
+  unitSummaries: _unitSummaries
+} = useChartConfig(props, {
+  chartType: 'Bubble Chart',
+  xType: props.xType || 'value',
+  resolvedColorPalette: () => colorPaletteResolved.value,
+  resolvedYAxisColor: () => yAxisColorResolved.value,
+  resolvedY2AxisColor: () => y2AxisColorResolved.value
+});
 
 // Get size format
 const sizeFormat = computed(() => {
@@ -189,7 +198,6 @@ const hovering = ref(false);
     :subtitle="props.subtitle"
     :height="props.height"
     :width="props.width"
-    :theme="activeAppearance"
     :renderer="props.renderer"
     :connect-group="props.connectGroup"
     :series-colors="seriesColorsResolved as Record<string, string>"
@@ -205,7 +213,6 @@ const hovering = ref(false);
         :config="chartConfig"
         :data="processedData"
         :chart-title="props.title"
-        :theme="activeAppearance"
         :series-colors="seriesColorsResolved as Record<string, string>"
         :echarts-options="props.echartsOptions"
         :series-options="props.seriesOptions"

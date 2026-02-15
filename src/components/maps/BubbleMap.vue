@@ -84,7 +84,7 @@ function buildTooltip(item: typeof bubbleData.value[number]): string {
   if (props.size) {
     html += `<div class="tooltip-row"><span class="tooltip-label">${props.size}</span> <span>${formatValue(item.size, sizeFormat.value)}</span></div>`;
   }
-  if (item.value != null && props.value) {
+  if (item.value != null && props.value && props.value !== props.size) {
     html += `<div class="tooltip-row"><span class="tooltip-label">${props.value}</span> <span>${formatValue(item.value, valueFormat.value)}</span></div>`;
   }
   return html;

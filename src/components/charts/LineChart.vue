@@ -37,7 +37,7 @@ const emit = defineEmits<{
   (e: 'click', params: unknown): void;
 }>();
 
-const { activeAppearance, resolveColor, resolveColorPalette, resolveColorsObject } = useThemeStores();
+const { resolveColor, resolveColorPalette, resolveColorsObject } = useThemeStores();
 
 // Interactive features - use getters for reactivity
 const {
@@ -53,17 +53,6 @@ const {
   chartType: 'line'
 });
 
-// Process chart configuration
-// Note: We pass props directly (not spread) to maintain Vue reactivity
-const {
-  processedData,
-  columnSummary,
-  xAxisType: _xAxisType,
-  baseConfig,
-  formats,
-  unitSummaries
-} = useChartConfig(props, { chartType: 'Line Chart' });
-
 // Resolve colors
 const lineColorResolved = computed(() =>
   props.lineColor ? resolveColor(props.lineColor).value : undefined
@@ -77,6 +66,28 @@ const colorPaletteResolved = computed(() =>
 const seriesColorsResolved = computed(() =>
   props.seriesColors ? resolveColorsObject(props.seriesColors).value : undefined
 );
+const yAxisColorResolved = computed(() =>
+  props.yAxisColor ? resolveColor(props.yAxisColor).value : undefined
+);
+const y2AxisColorResolved = computed(() =>
+  props.y2AxisColor ? resolveColor(props.y2AxisColor).value : undefined
+);
+
+// Process chart configuration
+// Note: We pass props directly (not spread) to maintain Vue reactivity
+const {
+  processedData,
+  columnSummary,
+  xAxisType: _xAxisType,
+  baseConfig,
+  formats,
+  unitSummaries
+} = useChartConfig(props, {
+  chartType: 'Line Chart',
+  resolvedColorPalette: () => colorPaletteResolved.value,
+  resolvedYAxisColor: () => yAxisColorResolved.value,
+  resolvedY2AxisColor: () => y2AxisColorResolved.value
+});
 
 // Map line type to ECharts format
 const lineTypeMap = {
@@ -152,7 +163,7 @@ const seriesData = computed(() => {
     });
   }
 
-  return getSeriesConfig(
+  const allSeries = getSeriesConfig(
     data,
     props.x,
     props.y,
@@ -165,6 +176,20 @@ const seriesData = computed(() => {
       seriesOrder: props.seriesOrder
     }
   );
+
+  // Apply y2SeriesType if specified (e.g., 'bar' for line chart with bar y2)
+  if (props.y2 && props.y2SeriesType) {
+    for (let i = 0; i < allSeries.length; i++) {
+      if (allSeries[i].yAxisIndex === 1) {
+        allSeries[i].type = props.y2SeriesType;
+        if (props.y2SeriesType === 'bar') {
+          allSeries[i].barMaxWidth = 60;
+        }
+      }
+    }
+  }
+
+  return allSeries;
 });
 
 // Build final config
@@ -229,7 +254,6 @@ const hovering = ref(false);
     :subtitle="props.subtitle"
     :height="props.height"
     :width="props.width"
-    :theme="activeAppearance"
     :renderer="props.renderer"
     :connect-group="props.connectGroup"
     :series-colors="seriesColorsResolved as Record<string, string>"
@@ -246,7 +270,6 @@ const hovering = ref(false);
         :config="chartConfig"
         :data="processedData"
         :chart-title="props.title"
-        :theme="activeAppearance"
         :series-colors="seriesColorsResolved as Record<string, string>"
         :echarts-options="props.echartsOptions"
         :series-options="props.seriesOptions"

@@ -235,7 +235,7 @@ export const bigValueData = (() => {
     rows.push({
       date: date.toISOString().split('T')[0],
       revenue: Math.round(45000 + Math.random() * 10000 + Math.sin(i / 5) * 3000),
-      growth_pct: 0.124,
+      previous_revenue: Math.round(40000 + Math.random() * 9000 + Math.sin(i / 5) * 2500),
     });
   }
   return rows;

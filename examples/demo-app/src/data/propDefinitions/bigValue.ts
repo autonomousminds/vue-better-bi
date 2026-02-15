@@ -12,6 +12,13 @@ export const bigValueProps: PropDefinition[] = [
 
   // Comparison
   { name: 'comparisonDelta', label: 'Show as Delta', control: 'checkbox', defaultValue: true, group: 'Comparison' },
+  {
+    name: 'comparisonDisplay', label: 'Comparison Display', control: 'select', defaultValue: 'percent', group: 'Comparison',
+    options: [
+      { label: 'Percent', value: 'percent' },
+      { label: 'Absolute', value: 'absolute' },
+    ],
+  },
   { name: 'comparisonFmt', label: 'Comparison Format', control: 'select', defaultValue: '', group: 'Comparison', options: formatOptions },
   { name: 'comparisonTitle', label: 'Comparison Title', control: 'text', defaultValue: '', group: 'Comparison' },
   { name: 'downIsGood', label: 'Down is Good', control: 'checkbox', defaultValue: false, group: 'Comparison' },

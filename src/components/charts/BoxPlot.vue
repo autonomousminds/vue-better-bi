@@ -28,7 +28,7 @@ const emit = defineEmits<{
   (e: 'click', params: unknown): void;
 }>();
 
-const { activeAppearance, resolveColor, resolveColorPalette } = useThemeStores();
+const { resolveColor, resolveColorPalette } = useThemeStores();
 
 // Process chart configuration
 const {
@@ -142,7 +142,6 @@ const hovering = ref(false);
     :subtitle="props.subtitle"
     :height="props.height"
     :width="props.width"
-    :theme="activeAppearance"
     :renderer="props.renderer"
     :connect-group="props.connectGroup"
     :echarts-options="props.echartsOptions"
@@ -157,7 +156,6 @@ const hovering = ref(false);
         :config="chartConfig"
         :data="processedData"
         :chart-title="props.title"
-        :theme="activeAppearance"
         :echarts-options="props.echartsOptions"
         :series-options="props.seriesOptions"
         :downloadable-data="props.downloadableData"

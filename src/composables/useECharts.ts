@@ -4,7 +4,6 @@
 
 import {
   ref,
-  watch,
   onMounted,
   onUnmounted,
   shallowRef,
@@ -14,15 +13,10 @@ import {
 import * as echarts from 'echarts';
 import type { EChartsOption, ECharts } from 'echarts';
 import debounce from 'debounce';
-import type { Appearance, ChartRenderer } from '../types';
-import { defaultThemeLight, defaultThemeDark } from '../themes/echartsThemes';
+import type { ChartRenderer } from '../types';
+import { defaultThemeLight } from '../themes/echartsThemes';
 
 export interface UseEChartsOptions {
-  /**
-   * Theme mode
-   */
-  theme?: Ref<Appearance> | Appearance;
-
   /**
    * Renderer type
    */
@@ -107,7 +101,6 @@ let themesRegistered = false;
 function registerThemes(): void {
   if (themesRegistered) return;
   echarts.registerTheme('light', defaultThemeLight);
-  echarts.registerTheme('dark', defaultThemeDark);
   themesRegistered = true;
 }
 
@@ -127,7 +120,6 @@ function shouldUseSvg(container: HTMLElement): boolean {
  */
 export function useECharts(options: UseEChartsOptions = {}): UseEChartsReturn {
   const {
-    theme = 'light',
     renderer = 'canvas',
     connectGroup,
     animationDuration = ANIMATION_DURATION,
@@ -138,14 +130,6 @@ export function useECharts(options: UseEChartsOptions = {}): UseEChartsReturn {
   const chartInstance: ShallowRef<ECharts | null> = shallowRef(null);
   const containerRef: Ref<HTMLElement | null> = ref(null);
   let resizeObserver: ResizeObserver | null = null;
-
-  // Get the current theme value
-  const getThemeValue = (): Appearance => {
-    if (typeof theme === 'string') {
-      return theme;
-    }
-    return theme.value;
-  };
 
   // Register themes
   registerThemes();
@@ -168,8 +152,8 @@ export function useECharts(options: UseEChartsOptions = {}): UseEChartsReturn {
     // Determine renderer
     const useRenderer = shouldUseSvg(targetContainer) ? 'svg' : renderer;
 
-    // Create new instance
-    const instance = echarts.init(targetContainer, getThemeValue(), {
+    // Create new instance with light theme
+    const instance = echarts.init(targetContainer, 'light', {
       renderer: useRenderer
     });
 
@@ -292,20 +276,6 @@ export function useECharts(options: UseEChartsOptions = {}): UseEChartsReturn {
     }
     dispose();
   });
-
-  // Watch for theme changes
-  if (typeof theme !== 'string') {
-    watch(theme, (newTheme) => {
-      if (chartInstance.value && containerRef.value) {
-        // Re-initialize with new theme
-        chartInstance.value.dispose();
-        const instance = echarts.init(containerRef.value, newTheme, {
-          renderer: shouldUseSvg(containerRef.value) ? 'svg' : renderer
-        });
-        chartInstance.value = instance;
-      }
-    });
-  }
 
   return {
     chartInstance,

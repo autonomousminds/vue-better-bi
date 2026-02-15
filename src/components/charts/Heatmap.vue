@@ -28,7 +28,7 @@ const emit = defineEmits<{
   (e: 'click', params: unknown): void;
 }>();
 
-const { activeAppearance, resolveColorScale } = useThemeStores();
+const { resolveColorScale } = useThemeStores();
 
 // Resolve color scale
 const colorScaleResolved = computed(() =>
@@ -196,7 +196,6 @@ const hovering = ref(false);
     :subtitle="props.subtitle"
     :height="props.height"
     :width="props.width"
-    :theme="activeAppearance"
     :renderer="props.renderer"
     :echarts-options="props.echartsOptions"
     :background-color="props.backgroundColor"
@@ -209,7 +208,6 @@ const hovering = ref(false);
         :config="chartConfig"
         :data="props.data"
         :chart-title="props.title"
-        :theme="activeAppearance"
         :echarts-options="props.echartsOptions"
         :downloadable-data="props.downloadableData"
         :downloadable-image="props.downloadableImage"

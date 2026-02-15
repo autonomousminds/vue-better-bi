@@ -347,6 +347,7 @@ export interface AreaChartProps extends BaseChartProps {
   showAllLabels?: boolean;
   seriesOrder?: string[];
   seriesLabelFmt?: string;
+  y2SeriesType?: 'line' | 'bar';
 }
 
 export interface ScatterPlotProps extends BaseChartProps {

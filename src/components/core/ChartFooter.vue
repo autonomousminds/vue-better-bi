@@ -6,7 +6,7 @@
 
 // Vue types
 import type { EChartsOption } from 'echarts';
-import type { DataRecord, Appearance } from '../../types';
+import type { DataRecord } from '../../types';
 import { useExport } from '../../composables/useExport';
 
 interface Props {
@@ -14,7 +14,6 @@ interface Props {
   data?: DataRecord[];
   queryId?: string;
   chartTitle?: string;
-  theme?: Appearance;
   seriesColors?: Record<string, string>;
   echartsOptions?: EChartsOption;
   seriesOptions?: Record<string, unknown>;
@@ -26,8 +25,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   downloadableData: true,
   downloadableImage: true,
-  visible: false,
-  theme: 'light'
+  visible: false
 });
 
 const { exportAsPng, exportAsCsv, isExporting } = useExport();
@@ -40,7 +38,6 @@ const handleSaveImage = async () => {
       pixelRatio: 3,
       width: 666
     },
-    props.theme,
     props.seriesColors,
     props.echartsOptions,
     props.seriesOptions

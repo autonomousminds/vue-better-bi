@@ -6,7 +6,7 @@
  * Analogous to Evidence's BaseMap.svelte.
  */
 import { ref, onMounted, onBeforeUnmount } from 'vue';
-import ChartHeader from '../core/ChartHeader.vue';
+import ChartContainer from '../core/ChartContainer.vue';
 import { useLeafletMap, type LeafletMapOptions } from '../../composables/useLeafletMap';
 import { useExport } from '../../composables/useExport';
 import type { DataRecord } from '../../types';
@@ -77,13 +77,13 @@ const handleDownloadData = () => {
 </script>
 
 <template>
-  <div
-    class="leaflet-base-wrapper"
-    :style="{ width: props.width, backgroundColor: props.backgroundColor }"
+  <ChartContainer
+    :title="props.title"
+    :subtitle="props.subtitle"
+    :background-color="props.backgroundColor"
     @mouseenter="hovering = true"
     @mouseleave="hovering = false"
   >
-    <ChartHeader :title="props.title" :subtitle="props.subtitle" />
 
     <div v-if="leaflet.error.value" class="leaflet-error">
       {{ leaflet.error.value }}
@@ -153,14 +153,10 @@ const handleDownloadData = () => {
     </div>
 
     <slot />
-  </div>
+  </ChartContainer>
 </template>
 
 <style scoped>
-.leaflet-base-wrapper {
-  position: relative;
-}
-
 .leaflet-map-container {
   border-radius: 6px;
   overflow: hidden;

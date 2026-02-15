@@ -243,6 +243,9 @@ interface ChartConfigExtraOptions {
   chartType?: string;
   stacked100?: boolean;
   xType?: string;
+  resolvedColorPalette?: () => string[] | undefined;
+  resolvedYAxisColor?: () => unknown;
+  resolvedY2AxisColor?: () => unknown;
 }
 
 export function useChartConfig(
@@ -250,7 +253,7 @@ export function useChartConfig(
   options: ChartConfigExtraOptions = {}
 ): UseChartConfigReturn {
   // Extract options (chartType and stacked100 reserved for future use)
-  const { xType: overrideXType } = options;
+  const { xType: overrideXType, resolvedColorPalette: getColorPalette, resolvedYAxisColor: getYAxisColor, resolvedY2AxisColor: getY2AxisColor } = options;
   // Process data
   const processedData = computed(() => {
     let data = [...(props.data || [])];
@@ -406,7 +409,10 @@ export function useChartConfig(
     const yAxisTitleRaw = props.yAxisTitle === true
       ? formatTitle(Array.isArray(props.y) ? '' : (props.y || ''), formats.value.y)
       : (props.yAxisTitle === false ? '' : (props.yAxisTitle || ''));
-    const yAxisTitlePaddingTop = yAxisTitleRaw ? 15 : 0;
+    const y2AxisTitleRaw = props.y2AxisTitle === true
+      ? formatTitle(Array.isArray(props.y2) ? '' : (props.y2 || ''), formats.value.y2)
+      : (props.y2AxisTitle === false ? '' : (props.y2AxisTitle || ''));
+    const yAxisTitlePaddingTop = (yAxisTitleRaw || y2AxisTitleRaw) ? 15 : 0;
 
     const chartTop = legendHeight + chartAreaPaddingTop + yAxisTitlePaddingTop;
 
@@ -476,7 +482,34 @@ export function useChartConfig(
           nameGap: 30
         };
 
-    const yAxisConfig = swapXY
+    const hasY2 = !swapXY && y2Count.value > 0;
+
+    // Compute axis colors (only when dual axis is active)
+    const colorPalette = getColorPalette?.();
+    const yAxisColorRaw = getYAxisColor?.() as string | undefined;
+    const y2AxisColorRaw = getY2AxisColor?.() as string | undefined;
+
+    const yAxisColorValue = hasY2
+      ? (!yAxisColorRaw || yAxisColorRaw === 'true'
+          ? colorPalette?.[0]
+          : yAxisColorRaw !== 'false' ? yAxisColorRaw : undefined)
+      : undefined;
+
+    const y2StartIndex = yCount.value * (props.series ? getDistinctCount(processedData.value, props.series) : 1);
+    const y2AxisColorValue = hasY2
+      ? (!y2AxisColorRaw || y2AxisColorRaw === 'true'
+          ? colorPalette?.[y2StartIndex]
+          : y2AxisColorRaw !== 'false' ? y2AxisColorRaw : undefined)
+      : undefined;
+
+    // Y2 axis title
+    const y2AxisTitle = hasY2
+      ? (props.y2AxisTitle === true
+        ? formatTitle(Array.isArray(props.y2) ? '' : (props.y2 || ''), formats.value.y2)
+        : (props.y2AxisTitle === false ? '' : (props.y2AxisTitle || '')))
+      : '';
+
+    const primaryYAxisConfig = swapXY
       ? {
           type: 'category' as const,
           inverse: true,
@@ -494,16 +527,45 @@ export function useChartConfig(
           axisLabel: {
             show: props.yAxisLabels !== false,
             hideOverlap: true,
+            color: yAxisColorValue,
             formatter: (value: number) => formatAxisValue(value, formats.value.y, unitSummaries.value.y)
           },
           name: yAxisTitle,
           nameLocation: 'end' as const,
-          nameTextStyle: { align: 'left' as const, verticalAlign: 'top' as const, padding: [0, 5, 0, 0] as [number, number, number, number] },
+          nameTextStyle: { align: 'left' as const, verticalAlign: 'top' as const, padding: [0, 5, 0, 0] as [number, number, number, number], color: yAxisColorValue },
           min: props.yMin,
           max: props.yMax,
           scale: props.yScale,
           boundaryGap: ['0%', '1%'] as [string, string]
         };
+
+    // Build yAxis config — array when y2 exists, single object otherwise
+    let yAxisConfig: EChartsOption['yAxis'];
+    if (hasY2) {
+      const secondaryYAxisConfig = {
+        type: 'value' as const,
+        alignTicks: true,
+        splitLine: { show: props.y2Gridlines ?? false },
+        axisLine: { show: props.y2Baseline, onZero: false },
+        axisTick: { show: props.y2TickMarks },
+        axisLabel: {
+          show: props.y2AxisLabels !== false,
+          hideOverlap: true,
+          color: y2AxisColorValue,
+          formatter: (value: number) => formatAxisValue(value, formats.value.y2, unitSummaries.value.y2)
+        },
+        name: y2AxisTitle,
+        nameLocation: 'end' as const,
+        nameTextStyle: { align: 'right' as const, verticalAlign: 'top' as const, padding: [0, 0, 0, 5] as [number, number, number, number], color: y2AxisColorValue },
+        min: props.y2Min,
+        max: props.y2Max,
+        scale: props.y2Scale,
+        boundaryGap: ['0%', '1%'] as [string, string]
+      };
+      yAxisConfig = [primaryYAxisConfig, secondaryYAxisConfig];
+    } else {
+      yAxisConfig = primaryYAxisConfig;
+    }
 
     // Tooltip config
     const tooltipConfig = createTooltipConfig({
@@ -587,57 +649,11 @@ export function getSeriesConfig(
   yArray.forEach((col) => yList.push([col, 0]));
   y2Array.forEach((col) => yList.push([col, 1]));
 
-  // Generate series config
-  if (series && yList.length === 1) {
-    // Series column with single y column
-    const distinctValues = getDistinctValues(data, series);
-
-    for (const seriesValue of distinctValues) {
-      const filteredData = data.filter((d) => d[series] === seriesValue);
-      const seriesData = filteredData.map((d) => {
-        const xVal = xMismatch ? String(d[x]) : d[x];
-        const yVal = d[yList[0][0]];
-        const point = swapXY ? [yVal, xVal] : [xVal, yVal];
-
-        if (size) point.push(d[size]);
-        if (tooltipTitle) point.push(d[tooltipTitle]);
-
-        return point;
-      });
-
-      seriesConfigs.push({
-        name: String(seriesValue ?? 'null'),
-        data: seriesData,
-        yAxisIndex: yList[0][1],
-        ...baseConfig
-      });
-    }
-  } else if (yList.length > 1) {
-    // Multiple y columns
-    for (const [yCol, yAxisIndex] of yList) {
-      const seriesData = data.map((d) => {
-        const xVal = xMismatch ? String(d[x]) : d[x];
-        const yVal = d[yCol];
-        const point = swapXY ? [yVal, xVal] : [xVal, yVal];
-
-        if (size) point.push(d[size]);
-        if (tooltipTitle) point.push(d[tooltipTitle]);
-
-        return point;
-      });
-
-      seriesConfigs.push({
-        name: columnSummary[yCol]?.title || yCol,
-        data: seriesData,
-        yAxisIndex,
-        ...baseConfig
-      });
-    }
-  } else if (yList.length === 1) {
-    // Single y column
-    const seriesData = data.map((d) => {
+  // Helper to build data points for a column from a set of rows
+  function buildSeriesData(rows: DataRecord[], yCol: string): unknown[][] {
+    return rows.map((d) => {
       const xVal = xMismatch ? String(d[x]) : d[x];
-      const yVal = d[yList[0][0]];
+      const yVal = d[yCol];
       const point = swapXY ? [yVal, xVal] : [xVal, yVal];
 
       if (size) point.push(d[size]);
@@ -645,10 +661,86 @@ export function getSeriesConfig(
 
       return point;
     });
+  }
 
+  // Helper to aggregate y2 data by x value (sum) when series grouping causes duplicate x values
+  function buildAggregatedSeriesData(rows: DataRecord[], yCol: string): unknown[][] {
+    const aggregated = new Map<unknown, number>();
+    const xOrder: unknown[] = [];
+    for (const d of rows) {
+      const xVal = xMismatch ? String(d[x]) : d[x];
+      const yVal = d[yCol];
+      const numVal = typeof yVal === 'number' ? yVal : 0;
+      if (aggregated.has(xVal)) {
+        aggregated.set(xVal, (aggregated.get(xVal) || 0) + numVal);
+      } else {
+        aggregated.set(xVal, numVal);
+        xOrder.push(xVal);
+      }
+    }
+    return xOrder.map((xVal) => {
+      const point = swapXY ? [aggregated.get(xVal), xVal] : [xVal, aggregated.get(xVal)];
+      return point;
+    });
+  }
+
+  // Generate series config
+  if (series && y2Array.length > 0) {
+    // Series column WITH y2: group primary y by series, aggregate y2 separately
+    const distinctValues = getDistinctValues(data, series);
+
+    // Primary y columns: grouped by series value
+    for (const yCol of yArray) {
+      for (const seriesValue of distinctValues) {
+        const filteredData = data.filter((d) => d[series] === seriesValue);
+        seriesConfigs.push({
+          name: yArray.length > 1
+            ? `${String(seriesValue ?? 'null')} - ${columnSummary[yCol]?.title || yCol}`
+            : String(seriesValue ?? 'null'),
+          data: buildSeriesData(filteredData, yCol),
+          yAxisIndex: 0,
+          ...baseConfig
+        });
+      }
+    }
+
+    // Y2 columns: aggregated by x value (not grouped by series)
+    for (const y2Col of y2Array) {
+      seriesConfigs.push({
+        name: columnSummary[y2Col]?.title || y2Col,
+        data: buildAggregatedSeriesData(data, y2Col),
+        yAxisIndex: 1,
+        ...baseConfig
+      });
+    }
+  } else if (series && yList.length === 1) {
+    // Series column with single y column (no y2)
+    const distinctValues = getDistinctValues(data, series);
+
+    for (const seriesValue of distinctValues) {
+      const filteredData = data.filter((d) => d[series] === seriesValue);
+      seriesConfigs.push({
+        name: String(seriesValue ?? 'null'),
+        data: buildSeriesData(filteredData, yList[0][0]),
+        yAxisIndex: yList[0][1],
+        ...baseConfig
+      });
+    }
+  } else if (yList.length > 1) {
+    // Multiple y/y2 columns without series grouping
+    for (const [yCol, yAxisIndex] of yList) {
+      seriesConfigs.push({
+        name: columnSummary[yCol]?.title || yCol,
+        data: buildSeriesData(data, yCol),
+        yAxisIndex,
+        ...baseConfig
+      });
+    }
+  } else if (yList.length === 1) {
+    // Single y column without series grouping
     seriesConfigs.push({
       name: columnSummary[yList[0][0]]?.title || yList[0][0],
-      data: seriesData,
+      data: buildSeriesData(data, yList[0][0]),
       yAxisIndex: yList[0][1],
       ...baseConfig
     });

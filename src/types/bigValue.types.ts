@@ -51,6 +51,9 @@ export interface BigValueProps {
   /** Comparison label text (defaults to formatted column name) */
   comparisonTitle?: string;
 
+  /** Controls default comparison display mode: 'percent' for percentage change, 'absolute' for absolute change */
+  comparisonDisplay?: 'percent' | 'absolute';
+
   /** Whether negative changes should be colored green */
   downIsGood?: boolean;
 

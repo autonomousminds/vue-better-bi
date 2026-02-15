@@ -21,10 +21,7 @@ export const chartConfigKey: InjectionKey<Ref<EChartsOption>> = Symbol('chartCon
  */
 export interface ThemeStoresContext {
   activeAppearance: Ref<Appearance>;
-  selectedAppearance: Ref<Appearance | 'system'>;
   theme: Ref<Theme>;
-  setAppearance: (appearance: Appearance | 'system') => void;
-  cycleAppearance: () => void;
   resolveColor: <T>(input: T) => Ref<string | T | undefined>;
   resolveColorsObject: <T>(input: Record<string, T> | undefined) => Ref<Record<string, string | T | undefined> | undefined>;
   resolveColorPalette: (input: string | string[]) => Ref<string[] | undefined>;

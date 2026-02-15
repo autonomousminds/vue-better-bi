@@ -31,7 +31,7 @@ const emit = defineEmits<{
   (e: 'click', params: unknown): void;
 }>();
 
-const { activeAppearance, resolveColor, resolveColorPalette, resolveColorsObject } = useThemeStores();
+const { resolveColor, resolveColorPalette, resolveColorsObject } = useThemeStores();
 
 // Interactive features - use getters for reactivity
 const {
@@ -45,19 +45,6 @@ const {
   tooltip: () => props.tooltip,
   swapXY: () => props.swapXY,
   chartType: 'bar'
-});
-
-// Process chart configuration
-const {
-  processedData,
-  columnSummary,
-  xAxisType: _xAxisType,
-  baseConfig,
-  formats,
-  unitSummaries
-} = useChartConfig(props, {
-  chartType: 'Bar Chart',
-  stacked100: props.type === 'stacked100'
 });
 
 // Resolve colors
@@ -76,6 +63,28 @@ const colorPaletteResolved = computed(() =>
 const seriesColorsResolved = computed(() =>
   props.seriesColors ? resolveColorsObject(props.seriesColors).value : undefined
 );
+const yAxisColorResolved = computed(() =>
+  props.yAxisColor ? resolveColor(props.yAxisColor).value : undefined
+);
+const y2AxisColorResolved = computed(() =>
+  props.y2AxisColor ? resolveColor(props.y2AxisColor).value : undefined
+);
+
+// Process chart configuration
+const {
+  processedData,
+  columnSummary,
+  xAxisType: _xAxisType,
+  baseConfig,
+  formats,
+  unitSummaries
+} = useChartConfig(props, {
+  chartType: 'Bar Chart',
+  stacked100: props.type === 'stacked100',
+  resolvedColorPalette: () => colorPaletteResolved.value,
+  resolvedYAxisColor: () => yAxisColorResolved.value,
+  resolvedY2AxisColor: () => y2AxisColorResolved.value
+});
 
 // Build bar series configuration
 const barSeriesConfig = computed<Partial<SeriesConfig>>(() => {
@@ -116,7 +125,7 @@ const seriesData = computed(() => {
 
   const baseSeriesConfig = barSeriesConfig.value;
 
-  return getSeriesConfig(
+  const allSeries = getSeriesConfig(
     processedData.value,
     props.x,
     props.y,
@@ -129,6 +138,24 @@ const seriesData = computed(() => {
       seriesOrder: props.seriesOrder
     }
   );
+
+  // Apply y2SeriesType: change y2 series to the specified type (default: 'line')
+  if (props.y2) {
+    const y2Type = props.y2SeriesType || 'line';
+    for (let i = 0; i < allSeries.length; i++) {
+      if (allSeries[i].yAxisIndex === 1) {
+        allSeries[i].type = y2Type;
+        allSeries[i].stack = undefined;
+        // Add line styling for line type y2 series
+        if (y2Type === 'line') {
+          allSeries[i].symbol = 'circle';
+          allSeries[i].symbolSize = 6;
+        }
+      }
+    }
+  }
+
+  return allSeries;
 });
 
 // Build final config
@@ -145,11 +172,12 @@ const chartConfig = computed<EChartsOption>(() => {
 
   // Handle stacked100 y-axis formatting
   if (props.type === 'stacked100') {
-    const yAxis = config.yAxis as Record<string, unknown> | undefined;
-    if (yAxis && !props.swapXY) {
-      yAxis.max = 1;
-      yAxis.axisLabel = {
-        ...(yAxis.axisLabel as Record<string, unknown> | undefined),
+    const yAxisRaw = config.yAxis;
+    const primaryYAxis = (Array.isArray(yAxisRaw) ? yAxisRaw[0] : yAxisRaw) as Record<string, unknown> | undefined;
+    if (primaryYAxis && !props.swapXY) {
+      primaryYAxis.max = 1;
+      primaryYAxis.axisLabel = {
+        ...(primaryYAxis.axisLabel as Record<string, unknown> | undefined),
         formatter: (value: number) => `${Math.round(value * 100)}%`
       };
     }
@@ -232,7 +260,6 @@ const hovering = ref(false);
     :subtitle="props.subtitle"
     :height="props.height"
     :width="props.width"
-    :theme="activeAppearance"
     :renderer="props.renderer"
     :connect-group="props.connectGroup"
     :series-colors="seriesColorsResolved as Record<string, string>"
@@ -250,7 +277,6 @@ const hovering = ref(false);
         :config="chartConfig"
         :data="processedData"
         :chart-title="props.title"
-        :theme="activeAppearance"
         :series-colors="seriesColorsResolved as Record<string, string>"
         :echarts-options="props.echartsOptions"
         :series-options="props.seriesOptions"

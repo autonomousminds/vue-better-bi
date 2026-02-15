@@ -27,7 +27,7 @@ const emit = defineEmits<{
   (e: 'click', params: unknown): void;
 }>();
 
-const { activeAppearance, resolveColorPalette } = useThemeStores();
+const { resolveColorPalette } = useThemeStores();
 
 // Resolve colors
 const colorPaletteResolved = computed(() =>
@@ -70,16 +70,7 @@ const sankeyData = computed(() => {
 const chartConfig = computed<EChartsOption>(() => {
   const { nodes, links } = sankeyData.value;
 
-  // Calculate chart area
-  const hasTitle = !!props.title;
-  const hasSubtitle = !!props.subtitle;
-  const titleBoxHeight = (hasTitle ? 15 : 0) + (hasSubtitle ? 13 : 0) + (hasTitle || hasSubtitle ? 6 : 0);
-
   return {
-    title: {
-      text: props.title,
-      subtext: props.subtitle
-    },
     tooltip: {
       trigger: 'item' as const,
       triggerOn: 'mousemove',
@@ -104,7 +95,7 @@ const chartConfig = computed<EChartsOption>(() => {
         layoutIterations: 32,
         left: '5%',
         right: '15%',
-        top: titleBoxHeight + 20,
+        top: 20,
         bottom: 20,
         data: nodes,
         links: links,
@@ -135,7 +126,6 @@ const hovering = ref(false);
     :subtitle="props.subtitle"
     :height="props.height"
     :width="props.width"
-    :theme="activeAppearance"
     :renderer="props.renderer"
     :echarts-options="props.echartsOptions"
     :background-color="props.backgroundColor"
@@ -148,7 +138,6 @@ const hovering = ref(false);
         :config="chartConfig"
         :data="props.data"
         :chart-title="props.title"
-        :theme="activeAppearance"
         :echarts-options="props.echartsOptions"
         :downloadable-data="props.downloadableData"
         :downloadable-image="props.downloadableImage"

@@ -115,7 +115,7 @@ const data = [
 
 | Component | Description |
 |-----------|-------------|
-| `BigValue` | KPI metric display with sparkline and comparison delta |
+| `BigValue` | KPI metric display with sparkline, comparison delta, and percent/absolute toggle |
 
 ### Reference Components
 
@@ -263,6 +263,52 @@ configureThemes({
   xAxisTitle="Month"
   yAxisTitle="Sales ($)"
   :yGridlines="true"
+/>
+```
+
+### Secondary Y-Axis (Dual Axis)
+
+Add a secondary Y-axis to overlay different scales or chart types. Supported by BarChart, LineChart, and AreaChart.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `y2` | `string \| string[]` | - | Column(s) for secondary Y-axis |
+| `y2SeriesType` | `'line' \| 'bar'` | `'line'` | Chart type for Y2 series |
+| `y2Fmt` | `string` | - | Format for Y2 axis values |
+| `y2AxisTitle` | `string \| boolean` | - | Secondary axis title |
+| `y2AxisLabels` | `boolean` | `true` | Show Y2 axis labels |
+| `y2Gridlines` | `boolean` | `false` | Show Y2 gridlines |
+| `y2Baseline` | `boolean` | `false` | Show Y2 baseline |
+| `y2TickMarks` | `boolean` | `false` | Show Y2 tick marks |
+| `y2Min` / `y2Max` | `number` | - | Y2 axis range |
+| `y2Scale` | `boolean` | `false` | Auto-scale Y2 to fit data |
+| `yAxisColor` | `ColorInput` | auto | Primary Y-axis color (auto-matches first series color when Y2 is present) |
+| `y2AxisColor` | `ColorInput` | auto | Secondary Y-axis color (auto-matches first Y2 series color) |
+
+When a secondary axis is present, both axes automatically color their labels and titles to match their respective series colors. This provides a clear visual link between each axis and its data. You can override with a custom color or set to `'false'` to disable.
+
+```vue
+<!-- Bar chart with line overlay on secondary axis -->
+<BarChart
+  :data="data"
+  x="month"
+  y="revenue"
+  y2="profit_margin"
+  y2SeriesType="line"
+  yAxisTitle="Revenue"
+  y2AxisTitle="Profit Margin"
+  yFmt="usd0"
+  y2Fmt="pct1"
+/>
+
+<!-- Custom axis colors -->
+<LineChart
+  :data="data"
+  x="month"
+  y="temperature"
+  y2="rainfall"
+  yAxisColor="#e74c3c"
+  y2AxisColor="#3498db"
 />
 ```
 
@@ -666,6 +712,8 @@ Renders the cell value as raw HTML.
 
 A KPI metric display component for showing a single highlighted value with an optional sparkline trend chart and comparison delta indicator.
 
+The comparison column holds the **raw comparison value** (e.g. previous period's revenue), and the component automatically computes the percentage or absolute change. Click the comparison area to toggle between display modes.
+
 ### Basic Usage
 
 ```vue
@@ -673,8 +721,8 @@ A KPI metric display component for showing a single highlighted value with an op
 import { BigValue } from 'vue-better-echarts';
 
 const data = [
-  { date: '2025-01-01', revenue: 48500, growth_pct: 0.124 },
-  { date: '2025-01-02', revenue: 49200, growth_pct: 0.124 },
+  { date: '2025-01-01', revenue: 48500, previous_revenue: 43200 },
+  { date: '2025-01-02', revenue: 49200, previous_revenue: 44100 },
   // ... 30 days of data
 ];
 </script>
@@ -695,12 +743,11 @@ const data = [
 <BigValue
   :data="data"
   value="revenue"
-  comparison="growth_pct"
+  comparison="previous_revenue"
   sparkline="date"
   title="Revenue"
   subtitle="Last 30 days"
   fmt="usd0"
-  comparisonFmt="pct1"
 />
 ```
 
@@ -708,7 +755,8 @@ This renders:
 - **Title** and optional **subtitle** (same style as chart headers)
 - **Large formatted value** from the first row of data
 - **Sparkline** showing the trend over time (line, area, or bar)
-- **Comparison delta** with directional arrow and color coding
+- **Comparison delta** with directional arrow and color coding (e.g. `▲ 12.3%`)
+- **Clickable toggle** — click the comparison area to switch between percentage and absolute change
 
 ### BigValue Props
 
@@ -725,11 +773,18 @@ This renders:
 
 #### Comparison Props
 
+The `comparison` column should contain the **raw comparison value** (e.g. previous period's revenue). The component computes the delta automatically:
+- **Percent mode**: `(value - comparison) / |comparison|` — displayed as `▲ 12.3%`
+- **Absolute mode**: `value - comparison` — displayed as `▲ 5,234`
+
+Click the comparison area to toggle between modes.
+
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `comparison` | `string` | - | Column name for comparison value |
-| `comparisonDelta` | `boolean` | `true` | Show as delta indicator (`true`) or plain value (`false`) |
-| `comparisonFmt` | `string` | - | Format string for comparison value |
+| `comparison` | `string` | - | Column name for the raw comparison value |
+| `comparisonDelta` | `boolean` | `true` | Show as computed delta indicator (`true`) or plain value (`false`) |
+| `comparisonDisplay` | `'percent' \| 'absolute'` | `'percent'` | Default display mode for the delta (clickable to toggle) |
+| `comparisonFmt` | `string` | - | Format string for comparison value (used in absolute mode and non-delta display) |
 | `comparisonTitle` | `string` | auto | Label text (defaults to formatted column name) |
 | `downIsGood` | `boolean` | `false` | Invert colors (green for negative values) |
 | `neutralMin` | `number` | `0` | Minimum threshold for neutral range |
@@ -753,31 +808,39 @@ This renders:
 <!-- Simple KPI -->
 <BigValue :data="data" value="revenue" fmt="usd0" />
 
-<!-- With all features -->
+<!-- With all features (defaults to percent mode, click to toggle) -->
 <BigValue
   :data="data"
   value="revenue"
-  comparison="growth_pct"
+  comparison="previous_revenue"
   sparkline="date"
   title="Monthly Revenue"
   subtitle="Compared to previous period"
   fmt="usd0"
-  comparisonFmt="pct1"
   sparklineType="area"
   sparklineColor="#3366cc"
   :sparklineYScale="true"
+/>
+
+<!-- Start in absolute mode -->
+<BigValue
+  :data="data"
+  value="revenue"
+  comparison="previous_revenue"
+  comparisonDisplay="absolute"
+  fmt="usd0"
 />
 
 <!-- Down is good (e.g. costs, churn) -->
 <BigValue
   :data="data"
   value="churn_rate"
-  comparison="churn_change"
+  comparison="previous_churn_rate"
   fmt="pct1"
   :downIsGood="true"
 />
 
-<!-- Plain comparison (no delta arrow) -->
+<!-- Plain comparison (no delta computation, no toggle) -->
 <BigValue
   :data="data"
   value="revenue"
@@ -1136,7 +1199,7 @@ Both `PointMap` and `BubbleMap` accept a `basemap` prop for custom tile layers:
 
 ### Value Components
 
-- `BigValue` - KPI metric display with formatted value, sparkline chart, and comparison delta indicator
+- `BigValue` - KPI metric display with formatted value, sparkline chart, and comparison delta with percent/absolute toggle
 
 ## License
 

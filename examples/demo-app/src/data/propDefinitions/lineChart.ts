@@ -1,5 +1,5 @@
 import type { PropDefinition } from '../../types/playground.types';
-import { baseChartPropDefs } from './baseChartProps';
+import { baseChartPropDefs, y2AxisProps } from './baseChartProps';
 
 const lineSpecificProps: PropDefinition[] = [
   {
@@ -48,4 +48,23 @@ const lineSpecificProps: PropDefinition[] = [
   { name: 'labels', label: 'Show Labels', control: 'checkbox', defaultValue: false, group: 'Line Style' },
 ];
 
-export const lineChartProps: PropDefinition[] = [...lineSpecificProps, ...baseChartPropDefs];
+const lineY2Props: PropDefinition[] = [
+  {
+    name: 'y2', label: 'Y2 Column', control: 'select', defaultValue: '', group: 'Secondary Y-Axis',
+    options: [
+      { label: 'None', value: '' },
+      { label: 'trend', value: 'trend' },
+    ]
+  },
+  {
+    name: 'y2SeriesType', label: 'Y2 Series Type', control: 'select', defaultValue: 'line', group: 'Secondary Y-Axis',
+    options: [
+      { label: 'Line', value: 'line' },
+      { label: 'Bar', value: 'bar' },
+    ],
+    showWhen: (s) => !!s.y2,
+  },
+  ...y2AxisProps,
+];
+
+export const lineChartProps: PropDefinition[] = [...lineSpecificProps, ...baseChartPropDefs, ...lineY2Props];

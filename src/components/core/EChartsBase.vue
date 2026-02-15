@@ -8,17 +8,16 @@ import { ref, watch, onMounted, onUnmounted, shallowRef } from 'vue';
 import type { EChartsOption, ECharts } from 'echarts';
 import * as echarts from 'echarts';
 import debounce from 'debounce';
-import type { Appearance, ChartRenderer } from '../../types';
+import type { ChartRenderer } from '../../types';
 import { createEChartsTheme, themeVersion } from '../../themes/echartsThemes';
 import { applySeriesColors, applyEchartsOptions, applySeriesOptions } from '../../composables/useECharts';
 import ChartContainer from './ChartContainer.vue';
 
 const ANIMATION_DURATION = 500;
 
-// Register ECharts themes from current configuration
+// Register ECharts theme from current configuration
 function registerThemes(): void {
-  echarts.registerTheme('light', createEChartsTheme('light'));
-  echarts.registerTheme('dark', createEChartsTheme('dark'));
+  echarts.registerTheme('light', createEChartsTheme());
 }
 
 interface Props {
@@ -27,7 +26,6 @@ interface Props {
   subtitle?: string;
   height?: string;
   width?: string;
-  theme?: Appearance;
   renderer?: ChartRenderer;
   connectGroup?: string;
   seriesColors?: Record<string, string>;
@@ -42,7 +40,6 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   height: '291px',
   width: '100%',
-  theme: 'light',
   renderer: 'canvas'
 });
 
@@ -81,7 +78,7 @@ function initChart(): void {
   isFirstRender.value = true;
 
   const useRenderer = shouldUseSvg(containerRef.value) ? 'svg' : props.renderer;
-  const chart = echarts.init(containerRef.value, props.theme, {
+  const chart = echarts.init(containerRef.value, 'light', {
     renderer: useRenderer
   });
 
@@ -238,15 +235,6 @@ watch(
     updateChart();
   },
   { deep: true }
-);
-
-// Watch for theme changes (light/dark toggle)
-watch(
-  () => props.theme,
-  () => {
-    initChart();
-    updateChart();
-  }
 );
 
 // Watch for theme configuration changes (preset applied)

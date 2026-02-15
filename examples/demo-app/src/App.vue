@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import { useThemeStores } from 'vue-better-echarts';
 import AppHeader from './components/layout/AppHeader.vue';
 import AppSidebar from './components/layout/AppSidebar.vue';
 import PlaygroundView from './components/playground/PlaygroundView.vue';
 import SettingsPanel from './components/playground/SettingsPanel.vue';
 import { ref } from 'vue';
 
-const { activeAppearance } = useThemeStores();
 const sidebarOpen = ref(true);
 const settingsOpen = ref(true);
 </script>
 
 <template>
-  <div class="app" :class="activeAppearance">
+  <div class="app">
     <AppHeader />
     <div class="app-body">
       <AppSidebar v-if="sidebarOpen" />

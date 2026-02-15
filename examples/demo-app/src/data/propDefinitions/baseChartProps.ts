@@ -93,6 +93,17 @@ export const yAxisProps: PropDefinition[] = [
   { name: 'yGridlines', label: 'Y Gridlines', control: 'checkbox', defaultValue: true, group: 'Y-Axis' },
   { name: 'yTickMarks', label: 'Y Tick Marks', control: 'checkbox', defaultValue: false, group: 'Y-Axis' },
   { name: 'yLog', label: 'Log Scale', control: 'checkbox', defaultValue: false, group: 'Y-Axis' },
+  { name: 'yAxisColor', label: 'Y Axis Color', control: 'color', defaultValue: '', group: 'Y-Axis', showWhen: (s) => !!s.y2 },
+];
+
+export const y2AxisProps: PropDefinition[] = [
+  { name: 'y2Fmt', label: 'Y2 Format', control: 'select', defaultValue: '', group: 'Secondary Y-Axis', options: formatOptions, showWhen: (s) => !!s.y2 },
+  { name: 'y2AxisTitle', label: 'Y2 Axis Title', control: 'text', defaultValue: '', group: 'Secondary Y-Axis', showWhen: (s) => !!s.y2 },
+  { name: 'y2AxisLabels', label: 'Y2 Axis Labels', control: 'checkbox', defaultValue: true, group: 'Secondary Y-Axis', showWhen: (s) => !!s.y2 },
+  { name: 'y2Gridlines', label: 'Y2 Gridlines', control: 'checkbox', defaultValue: false, group: 'Secondary Y-Axis', showWhen: (s) => !!s.y2 },
+  { name: 'y2Baseline', label: 'Y2 Baseline', control: 'checkbox', defaultValue: false, group: 'Secondary Y-Axis', showWhen: (s) => !!s.y2 },
+  { name: 'y2TickMarks', label: 'Y2 Tick Marks', control: 'checkbox', defaultValue: false, group: 'Secondary Y-Axis', showWhen: (s) => !!s.y2 },
+  { name: 'y2AxisColor', label: 'Y2 Axis Color', control: 'color', defaultValue: '', group: 'Secondary Y-Axis', showWhen: (s) => !!s.y2 },
 ];
 
 export const displayProps: PropDefinition[] = [

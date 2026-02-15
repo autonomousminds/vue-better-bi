@@ -8,8 +8,8 @@ import download from 'downloadjs';
 import { mkConfig, generateCsv, download as downloadCsv } from 'export-to-csv';
 import * as echarts from 'echarts';
 import type { EChartsOption } from 'echarts';
-import type { DataRecord, Appearance } from '../types';
-import { defaultThemeLight, defaultThemeDark } from '../themes/echartsThemes';
+import type { DataRecord } from '../types';
+import { defaultThemeLight } from '../themes/echartsThemes';
 
 export interface ExportImageOptions {
   /**
@@ -84,7 +84,6 @@ export interface UseExportReturn {
   exportAsPng: (
     chartConfig: EChartsOption,
     options?: ExportImageOptions,
-    theme?: Appearance,
     seriesColors?: Record<string, string>,
     echartsOptions?: EChartsOption,
     seriesOptions?: Record<string, unknown>
@@ -96,7 +95,6 @@ export interface UseExportReturn {
   exportAsJpeg: (
     chartConfig: EChartsOption,
     options?: ExportImageOptions,
-    theme?: Appearance,
     seriesColors?: Record<string, string>,
     echartsOptions?: EChartsOption,
     seriesOptions?: Record<string, unknown>
@@ -117,7 +115,6 @@ export interface UseExportReturn {
    */
   copyToClipboard: (
     chartConfig: EChartsOption,
-    theme?: Appearance,
     seriesColors?: Record<string, string>,
     echartsOptions?: EChartsOption,
     seriesOptions?: Record<string, unknown>
@@ -129,7 +126,6 @@ export interface UseExportReturn {
   getChartDataUrl: (
     chartConfig: EChartsOption,
     options?: ExportImageOptions,
-    theme?: Appearance,
     seriesColors?: Record<string, string>,
     echartsOptions?: EChartsOption,
     seriesOptions?: Record<string, unknown>
@@ -141,7 +137,6 @@ let themesRegistered = false;
 function registerThemes(): void {
   if (themesRegistered) return;
   echarts.registerTheme('light', defaultThemeLight);
-  echarts.registerTheme('dark', defaultThemeDark);
   themesRegistered = true;
 }
 
@@ -230,7 +225,6 @@ function createExportChart(
   config: EChartsOption,
   width: number,
   height: number,
-  theme: Appearance,
   seriesColors?: Record<string, string>,
   echartsOptions?: EChartsOption,
   seriesOptions?: Record<string, unknown>
@@ -249,8 +243,8 @@ function createExportChart(
   `;
   document.body.appendChild(container);
 
-  // Create chart instance
-  const chart = echarts.init(container, theme, { renderer: 'canvas' });
+  // Create chart instance with light theme
+  const chart = echarts.init(container, 'light', { renderer: 'canvas' });
 
   // Set options with animation disabled
   const configWithoutAnimation = {
@@ -285,7 +279,6 @@ export function useExport(): UseExportReturn {
   const getChartDataUrl = (
     chartConfig: EChartsOption,
     options: ExportImageOptions = {},
-    theme: Appearance = 'light',
     seriesColors?: Record<string, string>,
     echartsOptions?: EChartsOption,
     seriesOptions?: Record<string, unknown>
@@ -293,7 +286,7 @@ export function useExport(): UseExportReturn {
     const {
       type = 'png',
       pixelRatio = 3,
-      backgroundColor = theme === 'dark' ? '#1a1a2e' : '#ffffff',
+      backgroundColor = '#ffffff',
       width = 666,
       excludeComponents = ['toolbox']
     } = options;
@@ -305,7 +298,6 @@ export function useExport(): UseExportReturn {
       chartConfig,
       width,
       height,
-      theme,
       seriesColors,
       echartsOptions,
       seriesOptions
@@ -332,7 +324,6 @@ export function useExport(): UseExportReturn {
   const exportAsImage = async (
     chartConfig: EChartsOption,
     options: ExportImageOptions = {},
-    theme: Appearance = 'light',
     seriesColors?: Record<string, string>,
     echartsOptions?: EChartsOption,
     seriesOptions?: Record<string, unknown>
@@ -348,7 +339,6 @@ export function useExport(): UseExportReturn {
       const dataUrl = getChartDataUrl(
         chartConfig,
         options,
-        theme,
         seriesColors,
         echartsOptions,
         seriesOptions
@@ -369,7 +359,6 @@ export function useExport(): UseExportReturn {
   const exportAsPng = (
     chartConfig: EChartsOption,
     options: ExportImageOptions = {},
-    theme?: Appearance,
     seriesColors?: Record<string, string>,
     echartsOptions?: EChartsOption,
     seriesOptions?: Record<string, unknown>
@@ -377,7 +366,6 @@ export function useExport(): UseExportReturn {
     return exportAsImage(
       chartConfig,
       { ...options, type: 'png', pixelRatio: options.pixelRatio || 3 },
-      theme || 'light',
       seriesColors,
       echartsOptions,
       seriesOptions
@@ -390,7 +378,6 @@ export function useExport(): UseExportReturn {
   const exportAsJpeg = (
     chartConfig: EChartsOption,
     options: ExportImageOptions = {},
-    theme?: Appearance,
     seriesColors?: Record<string, string>,
     echartsOptions?: EChartsOption,
     seriesOptions?: Record<string, unknown>
@@ -398,7 +385,6 @@ export function useExport(): UseExportReturn {
     return exportAsImage(
       chartConfig,
       { ...options, type: 'jpeg', pixelRatio: options.pixelRatio || 2 },
-      theme || 'light',
       seriesColors,
       echartsOptions,
       seriesOptions
@@ -469,7 +455,6 @@ export function useExport(): UseExportReturn {
    */
   const copyToClipboard = async (
     chartConfig: EChartsOption,
-    theme: Appearance = 'light',
     seriesColors?: Record<string, string>,
     echartsOptions?: EChartsOption,
     seriesOptions?: Record<string, unknown>
@@ -480,7 +465,6 @@ export function useExport(): UseExportReturn {
       const dataUrl = getChartDataUrl(
         chartConfig,
         { type: 'png', pixelRatio: 2 },
-        theme,
         seriesColors,
         echartsOptions,
         seriesOptions

@@ -25,7 +25,7 @@ const emit = defineEmits<{
   (e: 'click', params: unknown): void;
 }>();
 
-const { activeAppearance, resolveColorScale } = useThemeStores();
+const { resolveColorScale } = useThemeStores();
 
 // Resolve color scale
 const colorScaleResolved = computed(() =>
@@ -109,11 +109,6 @@ const chartConfig = computed<EChartsOption>(() => {
   const cellSize = 13;
   const yearHeight = cellSize * 7 + 40;
 
-  // Calculate chart area
-  const hasTitle = !!props.title;
-  const hasSubtitle = !!props.subtitle;
-  const titleBoxHeight = (hasTitle ? 15 : 0) + (hasSubtitle ? 13 : 0) + (hasTitle || hasSubtitle ? 6 : 0);
-
   // Create calendar for each year
   const calendars: object[] = [];
   const series: object[] = [];
@@ -123,7 +118,7 @@ const chartConfig = computed<EChartsOption>(() => {
 
   for (let i = 0; i < yearCount; i++) {
     const year = startYear + i;
-    const top = titleBoxHeight + 30 + (i * yearHeight);
+    const top = 30 + (i * yearHeight);
 
     calendars.push({
       top,
@@ -148,10 +143,6 @@ const chartConfig = computed<EChartsOption>(() => {
   }
 
   return {
-    title: {
-      text: props.title,
-      subtext: props.subtitle
-    },
     tooltip: {
       trigger: 'item' as const,
       formatter: (params: unknown) => {
@@ -198,7 +189,6 @@ const hovering = ref(false);
     :subtitle="props.subtitle"
     :height="dynamicHeight"
     :width="props.width"
-    :theme="activeAppearance"
     :renderer="props.renderer"
     :echarts-options="props.echartsOptions"
     :background-color="props.backgroundColor"
@@ -211,7 +201,6 @@ const hovering = ref(false);
         :config="chartConfig"
         :data="props.data"
         :chart-title="props.title"
-        :theme="activeAppearance"
         :echarts-options="props.echartsOptions"
         :downloadable-data="props.downloadableData"
         :downloadable-image="props.downloadableImage"

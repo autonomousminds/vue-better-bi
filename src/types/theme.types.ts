@@ -2,8 +2,7 @@
  * Theme types for the chart system
  */
 
-export type Appearance = 'light' | 'dark';
-export type AppearancePreference = 'light' | 'dark' | 'system';
+export type Appearance = 'light';
 
 export interface ThemeColors {
   'base-100': string;
@@ -32,8 +31,7 @@ export interface Theme {
 
 export interface ThemesConfig {
   appearance: {
-    default: AppearancePreference;
-    switcher: boolean;
+    default: Appearance;
   };
 }
 
@@ -42,7 +40,6 @@ export type ColorPaletteInput = string | string[];
 export type ColorScaleInput = string | string[];
 
 export interface EChartsThemeConfig {
-  darkMode: boolean;
   backgroundColor: string;
   textStyle: {
     fontFamily: string[];

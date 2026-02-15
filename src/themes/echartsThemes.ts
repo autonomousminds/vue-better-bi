@@ -1,10 +1,10 @@
 /**
  * ECharts theme configuration
- * Light and dark theme support with customizable colors
+ * Light theme with customizable colors
  */
 
 import { ref } from 'vue';
-import type { EChartsThemeConfig, Appearance, Theme } from '../types';
+import type { EChartsThemeConfig, Theme } from '../types';
 
 /**
  * Reactive counter that increments when themes are reconfigured.
@@ -13,24 +13,14 @@ import type { EChartsThemeConfig, Appearance, Theme } from '../types';
 export const themeVersion = ref(0);
 
 // Default theme colors - computed using the algorithm from computeShades.js
-// Based on base-100 light: #ffffff, dark: #09090b
+// Based on base-100 light: #ffffff
 const defaultThemeColors = {
-  light: {
-    'base-100': '#ffffff',
-    'base-200': '#f5f5f5',
-    'base-300': '#d4d4d4',
-    'base-content': '#404040',
-    'base-content-muted': '#737373',
-    'base-heading': '#0d0d0d'
-  },
-  dark: {
-    'base-100': '#09090b',
-    'base-200': '#18181b',
-    'base-300': '#3f3f46',
-    'base-content': '#d4d4d8',
-    'base-content-muted': '#71717a',
-    'base-heading': '#fafafa'
-  }
+  'base-100': '#ffffff',
+  'base-200': '#f5f5f5',
+  'base-300': '#d4d4d4',
+  'base-content': '#404040',
+  'base-content-muted': '#737373',
+  'base-heading': '#0d0d0d'
 };
 
 // Default color palette
@@ -47,76 +37,55 @@ const defaultColorPalette = [
   '#46a485'
 ];
 
-// User-configurable themes
-let themes: { light: Theme; dark: Theme } = {
-  light: {
-    colors: defaultThemeColors.light,
-    colorPalettes: {
-      default: defaultColorPalette
-    },
-    colorScales: {
-      default: ['#ADD8E6', '#00008B'],
-      blue: ['#ADD8E6', '#00008B'],
-      green: ['#90EE90', '#006400'],
-      red: ['#FFB6C1', '#8B0000'],
-      orange: ['#FFDAB9', '#FF4500'],
-      purple: ['#E6E6FA', '#4B0082']
-    }
+// User-configurable theme
+let theme: Theme = {
+  colors: defaultThemeColors,
+  colorPalettes: {
+    default: defaultColorPalette
   },
-  dark: {
-    colors: defaultThemeColors.dark,
-    colorPalettes: {
-      default: defaultColorPalette
-    },
-    colorScales: {
-      default: ['#ADD8E6', '#00008B'],
-      blue: ['#ADD8E6', '#00008B'],
-      green: ['#90EE90', '#006400'],
-      red: ['#FFB6C1', '#8B0000'],
-      orange: ['#FFDAB9', '#FF4500'],
-      purple: ['#E6E6FA', '#4B0082']
-    }
+  colorScales: {
+    default: ['#ADD8E6', '#00008B'],
+    blue: ['#ADD8E6', '#00008B'],
+    green: ['#90EE90', '#006400'],
+    red: ['#FFB6C1', '#8B0000'],
+    orange: ['#FFDAB9', '#FF4500'],
+    purple: ['#E6E6FA', '#4B0082']
   }
 };
 
 /**
- * Configures the themes with custom colors and palettes
+ * Configures the theme with custom colors and palettes
  */
-export function configureThemes(customThemes: { light?: Partial<Theme>; dark?: Partial<Theme> }): void {
-  if (customThemes.light) {
-    themes.light = {
-      ...themes.light,
-      ...customThemes.light,
-      colors: { ...themes.light.colors, ...customThemes.light.colors },
-      colorPalettes: { ...themes.light.colorPalettes, ...customThemes.light.colorPalettes },
-      colorScales: { ...themes.light.colorScales, ...customThemes.light.colorScales }
-    };
-  }
-  if (customThemes.dark) {
-    themes.dark = {
-      ...themes.dark,
-      ...customThemes.dark,
-      colors: { ...themes.dark.colors, ...customThemes.dark.colors },
-      colorPalettes: { ...themes.dark.colorPalettes, ...customThemes.dark.colorPalettes },
-      colorScales: { ...themes.dark.colorScales, ...customThemes.dark.colorScales }
-    };
-  }
+export function configureThemes(customTheme: Partial<Theme>): void {
+  theme = {
+    ...theme,
+    ...customTheme,
+    colors: { ...theme.colors, ...customTheme.colors },
+    colorPalettes: { ...theme.colorPalettes, ...customTheme.colorPalettes },
+    colorScales: { ...theme.colorScales, ...customTheme.colorScales }
+  };
   themeVersion.value++;
 }
 
 /**
- * Gets the current themes configuration
+ * Gets the current theme configuration
  */
-export function getThemes(): { light: Theme; dark: Theme } {
-  return themes;
+export function getTheme(): Theme {
+  return theme;
 }
 
 /**
- * Creates an ECharts theme object for the given appearance mode
+ * @deprecated Use getTheme() instead. Kept for backward compatibility.
  */
-export function createEChartsTheme(mode: Appearance): EChartsThemeConfig {
-  const currentTheme = themes[mode];
-  const colors = currentTheme.colors;
+export function getThemes(): { light: Theme } {
+  return { light: theme };
+}
+
+/**
+ * Creates an ECharts theme object
+ */
+export function createEChartsTheme(): EChartsThemeConfig {
+  const colors = theme.colors;
 
   const axisBaselineColor = colors['base-content-muted'];
   const axisTickColor = colors['base-content-muted'];
@@ -133,7 +102,6 @@ export function createEChartsTheme(mode: Appearance): EChartsThemeConfig {
   const subtitleColor = colors['base-content-muted'];
 
   return {
-    darkMode: mode === 'dark',
     backgroundColor: colors['base-100'],
     textStyle: {
       fontFamily: ['Inter', 'sans-serif']
@@ -145,7 +113,7 @@ export function createEChartsTheme(mode: Appearance): EChartsThemeConfig {
       top: '15%',
       containLabel: true
     },
-    color: currentTheme.colorPalettes.default,
+    color: theme.colorPalettes.default,
     title: {
       padding: 0,
       itemGap: 7,
@@ -562,5 +530,4 @@ export function createEChartsTheme(mode: Appearance): EChartsThemeConfig {
   };
 }
 
-export const defaultThemeLight = createEChartsTheme('light');
-export const defaultThemeDark = createEChartsTheme('dark');
+export const defaultThemeLight = createEChartsTheme();
