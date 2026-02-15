@@ -8,7 +8,7 @@ import {
   USMap, PointMap, BubbleMap,
   DataTable, Column,
   BigValue
-} from 'vue-better-echarts';
+} from 'vue-better-bi';
 
 const componentMap: Record<string, Component> = {
   BarChart, LineChart, AreaChart, ScatterPlot, BubbleChart,

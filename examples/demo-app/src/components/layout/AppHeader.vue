@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { applyPreset, configureThemes, getThemes, themePresets, type ThemePresetName } from 'vue-better-echarts';
+import { applyPreset, configureThemes, getThemes, themePresets, type ThemePresetName } from 'vue-better-bi';
 
 const presetNames = ['default', ...Object.keys(themePresets)] as const;
 const activePreset = ref<string>('default');
@@ -20,7 +20,7 @@ function onPresetChange(event: Event) {
 <template>
   <header class="app-header">
     <div class="header-left">
-      <h1 class="header-title">vue-better-echarts</h1>
+      <h1 class="header-title">vue-better-bi</h1>
       <span class="header-badge">Playground</span>
     </div>
     <div class="header-right">

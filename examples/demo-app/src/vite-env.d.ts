@@ -6,6 +6,6 @@ declare module '*.vue' {
   export default component;
 }
 
-declare module 'vue-better-echarts' {
+declare module 'vue-better-bi' {
   export * from '../../../src/index';
 }

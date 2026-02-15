@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      'vue-better-echarts': resolve(__dirname, '../../src/index.ts')
+      'vue-better-bi': resolve(__dirname, '../../src/index.ts')
     }
   },
   optimizeDeps: {

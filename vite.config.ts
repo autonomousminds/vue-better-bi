@@ -27,9 +27,9 @@ export default defineConfig({
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
-      name: 'VueEChartsCharts',
+      name: 'VueBetterBI',
       formats: ['es', 'umd'],
-      fileName: (format) => `vue-better-echarts.${format === 'es' ? 'js' : 'umd.cjs'}`
+      fileName: (format) => `vue-better-bi.${format === 'es' ? 'js' : 'umd.cjs'}`
     },
     cssCodeSplit: false,
     rollupOptions: {

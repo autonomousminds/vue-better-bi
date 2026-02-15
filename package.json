@@ -1,15 +1,15 @@
 {
-  "name": "vue-better-echarts",
+  "name": "@autonomousminds-public/vue-better-bi",
   "version": "0.1.0",
   "description": "Vue 3 charting library built on ECharts with advanced formatting and theming",
   "type": "module",
-  "main": "./dist/vue-better-echarts.umd.cjs",
-  "module": "./dist/vue-better-echarts.js",
+  "main": "./dist/vue-better-bi.umd.cjs",
+  "module": "./dist/vue-better-bi.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/vue-better-echarts.js",
-      "require": "./dist/vue-better-echarts.umd.cjs",
+      "import": "./dist/vue-better-bi.js",
+      "require": "./dist/vue-better-bi.umd.cjs",
       "types": "./dist/index.d.ts"
     }
   },
@@ -64,5 +64,9 @@
     "typescript"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  }
 }

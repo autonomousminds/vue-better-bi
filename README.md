@@ -18,14 +18,14 @@ A Vue 3 charting library built on Apache ECharts and Leaflet.js with advanced fo
 
 ## Installation
 ```bash
-npm install github:autonomousminds/vue-better-echarts echarts
+npm install @autonomousminds-public/vue-better-bi echarts
 ```
 
 ## Quick Start
 
 ```vue
 <script setup>
-import { BarChart, LineChart, useTheme } from 'vue-better-echarts';
+import { BarChart, LineChart, useTheme } from '@autonomousminds-public/vue-better-bi';
 
 const { activeAppearance, cycleAppearance } = useTheme();
 
@@ -150,7 +150,7 @@ Use the `yFmt`, `xFmt`, or `valueFmt` props to format values:
 ### Using Theme Composable
 
 ```typescript
-import { useTheme } from 'vue-better-echarts';
+import { useTheme } from '@autonomousminds-public/vue-better-bi';
 
 const {
   activeAppearance,    // Current theme: 'light' | 'dark'
@@ -167,7 +167,7 @@ const {
 Apply a complete theme preset with a single call:
 
 ```typescript
-import { applyPreset } from 'vue-better-echarts';
+import { applyPreset } from '@autonomousminds-public/vue-better-bi';
 
 applyPreset('midnight');
 ```
@@ -186,7 +186,7 @@ Available presets:
 You can also start from a preset and customize further:
 
 ```typescript
-import { themePresets, configureThemes } from 'vue-better-echarts';
+import { themePresets, configureThemes } from '@autonomousminds-public/vue-better-bi';
 
 const custom = {
   light: {
@@ -201,7 +201,7 @@ configureThemes(custom);
 ### Custom Themes
 
 ```typescript
-import { configureThemes } from 'vue-better-echarts';
+import { configureThemes } from '@autonomousminds-public/vue-better-bi';
 
 configureThemes({
   light: {
@@ -480,7 +480,7 @@ A full-featured data table component with sorting, pagination, search, grouping,
 
 ```vue
 <script setup>
-import { DataTable } from 'vue-better-echarts';
+import { DataTable } from '@autonomousminds-public/vue-better-bi';
 
 const data = [
   { name: 'Alice', department: 'Engineering', salary: 125000, change: 0.08 },
@@ -502,7 +502,7 @@ Use `<Column>` children to control which columns appear, their order, formatting
 
 ```vue
 <script setup>
-import { DataTable, Column } from 'vue-better-echarts';
+import { DataTable, Column } from '@autonomousminds-public/vue-better-bi';
 </script>
 
 <template>
@@ -717,7 +717,7 @@ The comparison column holds the **raw comparison value** (e.g. previous period's
 
 ```vue
 <script setup>
-import { BigValue } from 'vue-better-echarts';
+import { BigValue } from '@autonomousminds-public/vue-better-bi';
 
 const data = [
   { date: '2025-01-01', revenue: 48500, previous_revenue: 43200 },

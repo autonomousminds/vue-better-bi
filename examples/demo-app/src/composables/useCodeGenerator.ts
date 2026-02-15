@@ -102,7 +102,7 @@ export function useCodeGenerator(
 
     // Build script section
     let script = `<script setup>\n`;
-    script += `import { ${imports.join(', ')} } from 'vue-better-echarts'\n\n`;
+    script += `import { ${imports.join(', ')} } from 'vue-better-bi'\n\n`;
 
     // Data (truncated)
     const sampleRows = d.slice(0, 5);
