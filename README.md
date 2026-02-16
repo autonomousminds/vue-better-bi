@@ -763,6 +763,7 @@ This renders:
 |------|------|---------|-------------|
 | `data` | `Array` | required | Data array |
 | `value` | `string` | required | Column name for the main display value |
+| `agg` | `string` | - | Aggregation for the displayed number: `sum`, `mean`, `median`, `min`, `max`, `count`, `countDistinct`, `weightedMean`. When set, the big number is computed from all rows instead of using the first row. The sparkline still plots every row individually. |
 | `title` | `string` | auto | Title text (defaults to formatted column name) |
 | `subtitle` | `string` | - | Subtitle text below the title |
 | `fmt` | `string` | - | Format string for the main value (e.g. `'usd0'`, `'num2'`) |
@@ -847,6 +848,26 @@ Click the comparison area to toggle between modes.
   :comparisonDelta="false"
   comparisonTitle="vs. target"
   fmt="usd0"
+/>
+
+<!-- Aggregated: big number = sum of all rows, sparkline = daily trend -->
+<BigValue
+  :data="dailyRevenue"
+  value="revenue"
+  agg="sum"
+  sparkline="date"
+  title="Total Revenue"
+  fmt="usd0"
+/>
+
+<!-- Average metric with trend -->
+<BigValue
+  :data="dailyData"
+  value="margin"
+  agg="mean"
+  sparkline="date"
+  title="Avg Margin"
+  fmt="pct1"
 />
 
 <!-- Linked sparklines (shared tooltip) -->

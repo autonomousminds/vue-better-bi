@@ -1,10 +1,22 @@
 import type { PropDefinition } from '../../types/playground.types';
 import { formatOptions } from './baseChartProps';
 
+const aggOptions = [
+  { label: 'None (first row)', value: '' },
+  { label: 'Sum', value: 'sum' },
+  { label: 'Mean', value: 'mean' },
+  { label: 'Median', value: 'median' },
+  { label: 'Min', value: 'min' },
+  { label: 'Max', value: 'max' },
+  { label: 'Count', value: 'count' },
+  { label: 'Count Distinct', value: 'countDistinct' },
+];
+
 export const bigValueProps: PropDefinition[] = [
   // Core
   { name: 'title', label: 'Title', control: 'text', defaultValue: '', group: 'Core' },
   { name: 'subtitle', label: 'Subtitle', control: 'text', defaultValue: '', group: 'Core' },
+  { name: 'agg', label: 'Aggregation', control: 'select', defaultValue: '', group: 'Core', options: aggOptions },
   { name: 'fmt', label: 'Value Format', control: 'select', defaultValue: '', group: 'Core', options: formatOptions },
   { name: 'link', label: 'Link URL', control: 'text', defaultValue: '', group: 'Core' },
   { name: 'minWidth', label: 'Min Width', control: 'text', defaultValue: '18%', group: 'Core' },

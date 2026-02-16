@@ -2,12 +2,19 @@
  * BigValue component types
  */
 
+import type { AggregationType } from './table.types';
+
 export interface BigValueProps {
   /** Data array */
   data: Record<string, unknown>[];
 
   /** Column name for the main value to display */
   value: string;
+
+  /** Aggregation to apply to the value column for the displayed number.
+   *  When set, the big number = agg(all rows[value]) instead of data[0][value].
+   *  The sparkline still plots every row individually. */
+  agg?: AggregationType;
 
   /** Column name for the comparison value */
   comparison?: string;

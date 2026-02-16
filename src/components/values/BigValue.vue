@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import type { BigValueProps } from '../../types';
 import { formatValue, getFormatObjectFromString, formatTitle } from '../../utils/formatting';
+import { aggregateColumn } from '../../utils/tableUtils';
 import { useThemeStores } from '../../composables/useTheme';
 import BigValueSparkline from './BigValueSparkline.vue';
 import DeltaCell from '../table/DeltaCell.vue';
@@ -47,12 +48,20 @@ const comparisonFormatObject = computed(() => {
   return undefined;
 });
 
-const displayValue = computed(() => {
+const mainRawValue = computed(() => {
   const data = normalizedData.value;
-  if (!data.length || !props.value) return '-';
+  if (!data.length || !props.value) return null;
+  if (props.agg) {
+    const result = aggregateColumn(data, props.value, props.agg, 'number');
+    return result != null ? Number(result) : null;
+  }
   const raw = data[0][props.value];
-  if (raw === null || raw === undefined) return '-';
-  return formatValue(raw, valueFormatObject.value);
+  return raw != null ? Number(raw) : null;
+});
+
+const displayValue = computed(() => {
+  if (mainRawValue.value === null) return '-';
+  return formatValue(mainRawValue.value, valueFormatObject.value);
 });
 
 const resolvedTitle = computed(() => {
@@ -67,16 +76,13 @@ const resolvedComparisonTitle = computed(() => {
   return '';
 });
 
-const mainRawValue = computed(() => {
-  const data = normalizedData.value;
-  if (!data.length || !props.value) return null;
-  const raw = data[0][props.value];
-  return raw != null ? Number(raw) : null;
-});
-
 const comparisonRawValue = computed(() => {
   const data = normalizedData.value;
   if (!data.length || !props.comparison) return null;
+  if (props.agg) {
+    const result = aggregateColumn(data, props.comparison, props.agg, 'number');
+    return result != null ? Number(result) : null;
+  }
   const raw = data[0][props.comparison];
   return raw != null ? Number(raw) : null;
 });
