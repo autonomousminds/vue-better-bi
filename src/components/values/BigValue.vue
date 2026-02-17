@@ -122,13 +122,47 @@ const titleRef = ref<HTMLElement>();
 const subtitleRef = ref<HTMLElement>();
 const isTitleTruncated = ref(false);
 const isSubtitleTruncated = ref(false);
+const titleHover = ref(false);
+const subtitleHover = ref(false);
+const tooltipStyle = ref<Record<string, string>>({});
+
+function isTruncated(el: HTMLElement): boolean {
+  return el.scrollWidth > el.clientWidth;
+}
 
 function checkTruncation() {
   if (titleRef.value) {
-    isTitleTruncated.value = titleRef.value.scrollWidth > titleRef.value.clientWidth;
+    isTitleTruncated.value = isTruncated(titleRef.value);
   }
   if (subtitleRef.value) {
-    isSubtitleTruncated.value = subtitleRef.value.scrollWidth > subtitleRef.value.clientWidth;
+    isSubtitleTruncated.value = isTruncated(subtitleRef.value);
+  }
+}
+
+function showTooltip(el: HTMLElement) {
+  const rect = el.getBoundingClientRect();
+  tooltipStyle.value = {
+    top: `${rect.bottom + 4}px`,
+    left: `${rect.left}px`,
+    maxWidth: `${Math.min(rect.width * 2, 400)}px`,
+  };
+}
+
+function onTitleEnter() {
+  if (!titleRef.value) return;
+  isTitleTruncated.value = isTruncated(titleRef.value);
+  if (isTitleTruncated.value) {
+    showTooltip(titleRef.value);
+    titleHover.value = true;
+  }
+}
+
+function onSubtitleEnter() {
+  if (!subtitleRef.value) return;
+  isSubtitleTruncated.value = isTruncated(subtitleRef.value);
+  if (isSubtitleTruncated.value) {
+    showTooltip(subtitleRef.value);
+    subtitleHover.value = true;
   }
 }
 
@@ -147,7 +181,8 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
       class="big-value-title"
       :class="[titleClass, { 'is-truncated': isTitleTruncated }]"
       :style="{ color: titleColor }"
-      :title="isTitleTruncated ? resolvedTitle : undefined"
+      @mouseenter="onTitleEnter"
+      @mouseleave="titleHover = false"
     >
       {{ resolvedTitle }}
     </p>
@@ -157,10 +192,28 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
       class="big-value-subtitle"
       :class="{ 'is-truncated': isSubtitleTruncated }"
       :style="{ color: subtitleColor }"
-      :title="isSubtitleTruncated ? subtitle : undefined"
+      @mouseenter="onSubtitleEnter"
+      @mouseleave="subtitleHover = false"
     >
       {{ subtitle }}
     </p>
+
+    <Teleport to="body">
+      <div
+        v-if="titleHover && isTitleTruncated"
+        class="big-value-tooltip"
+        :style="tooltipStyle"
+      >
+        {{ resolvedTitle }}
+      </div>
+      <div
+        v-if="subtitleHover && isSubtitleTruncated"
+        class="big-value-tooltip big-value-tooltip--sub"
+        :style="tooltipStyle"
+      >
+        {{ subtitle }}
+      </div>
+    </Teleport>
 
     <div :class="['big-value-main', valueClass]">
       <a v-if="link" :href="link" class="big-value-link">
@@ -244,7 +297,6 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
   font-weight: 700;
   line-height: 1;
   margin: 0;
-  max-width: 160px;
 }
 
 .big-value-subtitle {
@@ -252,7 +304,6 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
   font-weight: 400;
   line-height: 1.4;
   margin: 2px 0 0 0;
-  max-width: 200px;
 }
 
 .big-value-main {
@@ -300,5 +351,29 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
 .big-value-comparison-label {
   margin-left: 0.25rem;
   opacity: 0.6;
+}
+</style>
+
+<style>
+.big-value-tooltip {
+  position: fixed;
+  z-index: 9999;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: sans-serif;
+  line-height: 1.3;
+  color: #1f2937;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  white-space: normal;
+  word-break: break-word;
+  pointer-events: none;
+}
+.big-value-tooltip--sub {
+  font-weight: 400;
+  font-size: 12px;
 }
 </style>

@@ -22,6 +22,7 @@ const componentMap: Record<string, Component> = {
 const { currentChart, assembledProps, assembledColumnConfigs, currentData } = usePlaygroundState();
 
 const isTable = computed(() => currentChart.value.componentName === 'DataTable');
+const isBigValue = computed(() => currentChart.value.componentName === 'BigValue');
 
 const activeColumnEntries = computed(() => {
   const configs = assembledColumnConfigs.value;
@@ -53,6 +54,13 @@ const chartComponent = computed(() =>
       v-bind="assembledProps"
     />
 
+    <div v-else-if="isBigValue && chartComponent" class="big-value-container">
+      <component
+        :is="chartComponent"
+        :data="currentData"
+        v-bind="assembledProps"
+      />
+    </div>
     <component
       v-else-if="chartComponent"
       :is="chartComponent"
@@ -69,6 +77,20 @@ const chartComponent = computed(() =>
 .chart-view {
   padding: var(--space-4);
   min-height: 200px;
+}
+.big-value-container {
+  width: 240px;
+  min-width: 120px;
+  max-width: 100%;
+  resize: horizontal;
+  overflow: hidden;
+  border: 1px dashed var(--base-300, #d1d5db);
+  border-radius: 4px;
+  padding: 4px;
+}
+.big-value-container :deep(.big-value) {
+  display: block;
+  width: 100%;
 }
 .chart-fallback {
   display: flex;
