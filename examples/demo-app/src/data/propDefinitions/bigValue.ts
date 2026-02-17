@@ -16,13 +16,14 @@ export const bigValueProps: PropDefinition[] = [
   // Core
   { name: 'title', label: 'Title', control: 'text', defaultValue: '', group: 'Core' },
   { name: 'subtitle', label: 'Subtitle', control: 'text', defaultValue: '', group: 'Core' },
-  { name: 'agg', label: 'Aggregation', control: 'select', defaultValue: '', group: 'Core', options: aggOptions },
-  { name: 'fmt', label: 'Value Format', control: 'select', defaultValue: '', group: 'Core', options: formatOptions },
+  { name: 'agg', label: 'Aggregation', control: 'select', defaultValue: 'sum', group: 'Core', options: aggOptions },
+  { name: 'fmt', label: 'Value Format', control: 'select', defaultValue: 'num0', group: 'Core', options: formatOptions },
   { name: 'link', label: 'Link URL', control: 'text', defaultValue: '', group: 'Core' },
   { name: 'minWidth', label: 'Min Width', control: 'text', defaultValue: '18%', group: 'Core' },
   { name: 'maxWidth', label: 'Max Width', control: 'text', defaultValue: 'none', group: 'Core' },
 
   // Comparison
+  { name: 'comparisonAgg', label: 'Comparison Aggregation', control: 'select', defaultValue: 'sum', group: 'Comparison', options: aggOptions },
   { name: 'comparisonDelta', label: 'Show as Delta', control: 'checkbox', defaultValue: true, group: 'Comparison' },
   {
     name: 'comparisonDisplay', label: 'Comparison Display', control: 'select', defaultValue: 'percent', group: 'Comparison',
@@ -46,6 +47,7 @@ export const bigValueProps: PropDefinition[] = [
       { label: 'Bar', value: 'bar' },
     ],
   },
+  { name: 'sparklineY', label: 'Sparkline Y Column', control: 'text', defaultValue: '', group: 'Sparkline' },
   { name: 'sparklineColor', label: 'Sparkline Color', control: 'color', defaultValue: '', group: 'Sparkline' },
   { name: 'sparklineYScale', label: 'Y Scale', control: 'checkbox', defaultValue: false, group: 'Sparkline' },
   { name: 'sparklineValueFmt', label: 'Value Format', control: 'select', defaultValue: '', group: 'Sparkline', options: formatOptions },

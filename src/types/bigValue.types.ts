@@ -19,11 +19,19 @@ export interface BigValueProps {
   /** Column name for the comparison value */
   comparison?: string;
 
+  /** Aggregation to apply to the comparison column.
+   *  Unlike `agg`, this does NOT auto-inherit — comparison values are
+   *  typically pre-aggregated scalars, so no aggregation is the safe default. */
+  comparisonAgg?: AggregationType;
+
   /** Whether to show comparison as delta indicator (true) or plain value (false) */
   comparisonDelta?: boolean;
 
   /** Column name for the sparkline date/x-axis */
   sparkline?: string;
+
+  /** Column name for the sparkline y-axis values. Defaults to `value` if not set. */
+  sparklineY?: string;
 
   /** Sparkline chart type */
   sparklineType?: 'line' | 'area' | 'bar';

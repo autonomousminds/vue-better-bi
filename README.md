@@ -763,7 +763,7 @@ This renders:
 |------|------|---------|-------------|
 | `data` | `Array` | required | Data array |
 | `value` | `string` | required | Column name for the main display value |
-| `agg` | `string` | - | Aggregation for the displayed number: `sum`, `mean`, `median`, `min`, `max`, `count`, `countDistinct`, `weightedMean`. When set, the big number is computed from all rows instead of using the first row. The sparkline still plots every row individually. |
+| `agg` | `string` | - | Aggregation for the displayed number: `sum`, `mean`, `median`, `min`, `max`, `count`, `countDistinct`, `weightedMean`. When set, the big number is computed from all rows instead of using the first row. The sparkline still plots every row individually. Does **not** affect the comparison column — use `comparisonAgg` for that. |
 | `title` | `string` | auto | Title text (defaults to formatted column name) |
 | `subtitle` | `string` | - | Subtitle text below the title |
 | `fmt` | `string` | - | Format string for the main value (e.g. `'usd0'`, `'num2'`) |
@@ -782,6 +782,7 @@ Click the comparison area to toggle between modes.
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `comparison` | `string` | - | Column name for the raw comparison value |
+| `comparisonAgg` | `string` | - | Aggregation to apply to the comparison column. Unlike `agg`, this does **not** auto-inherit — comparison values are typically pre-aggregated, so the default is to read from the first row |
 | `comparisonDelta` | `boolean` | `true` | Show as computed delta indicator (`true`) or plain value (`false`) |
 | `comparisonDisplay` | `'percent' \| 'absolute'` | `'percent'` | Default display mode for the delta (clickable to toggle) |
 | `comparisonFmt` | `string` | - | Format string for comparison value (used in absolute mode and non-delta display) |
@@ -795,6 +796,7 @@ Click the comparison area to toggle between modes.
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `sparkline` | `string` | - | Column name for sparkline date/x-axis |
+| `sparklineY` | `string` | - | Column name for sparkline y-axis values. Defaults to `value` if not set. Useful when the sparkline should plot a different column than the big number (e.g. total daily count vs. filtered period count) |
 | `sparklineType` | `'line' \| 'area' \| 'bar'` | `'line'` | Sparkline chart type |
 | `sparklineColor` | `string` | - | Sparkline color override |
 | `sparklineYScale` | `boolean` | `false` | Scale sparkline y-axis to data range |

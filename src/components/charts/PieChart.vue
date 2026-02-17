@@ -53,10 +53,12 @@ const pieData = computed(() => {
   const nameCol = props.name || Object.keys(props.data[0])[0];
   const valueCol = props.value || Object.keys(props.data[0])[1];
 
-  return props.data.map((row) => ({
-    name: String(row[nameCol]),
-    value: row[valueCol] as number
-  }));
+  return props.data
+    .map((row) => ({
+      name: String(row[nameCol]),
+      value: row[valueCol] as number
+    }))
+    .filter((d) => d.value > 0);
 });
 
 // Compute the inner radius for donut mode

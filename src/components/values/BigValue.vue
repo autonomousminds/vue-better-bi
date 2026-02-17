@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted, nextTick } from 'vue';
 import type { BigValueProps } from '../../types';
 import { formatValue, getFormatObjectFromString, formatTitle } from '../../utils/formatting';
 import { aggregateColumn } from '../../utils/tableUtils';
@@ -79,8 +79,8 @@ const resolvedComparisonTitle = computed(() => {
 const comparisonRawValue = computed(() => {
   const data = normalizedData.value;
   if (!data.length || !props.comparison) return null;
-  if (props.agg) {
-    const result = aggregateColumn(data, props.comparison, props.agg, 'number');
+  if (props.comparisonAgg) {
+    const result = aggregateColumn(data, props.comparison, props.comparisonAgg, 'number');
     return result != null ? Number(result) : null;
   }
   const raw = data[0][props.comparison];
@@ -117,6 +117,23 @@ const sparklineEffectiveValueFmt = computed(() => props.fmt ?? props.sparklineVa
 
 const hasSparkline = computed(() => !!props.sparkline && normalizedData.value.length > 0);
 const hasComparison = computed(() => !!props.comparison && normalizedData.value.length > 0);
+
+const titleRef = ref<HTMLElement>();
+const subtitleRef = ref<HTMLElement>();
+const isTitleTruncated = ref(false);
+const isSubtitleTruncated = ref(false);
+
+function checkTruncation() {
+  if (titleRef.value) {
+    isTitleTruncated.value = titleRef.value.scrollWidth > titleRef.value.clientWidth;
+  }
+  if (subtitleRef.value) {
+    isSubtitleTruncated.value = subtitleRef.value.scrollWidth > subtitleRef.value.clientWidth;
+  }
+}
+
+onMounted(() => checkTruncation());
+watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
 </script>
 
 <template>
@@ -126,16 +143,21 @@ const hasComparison = computed(() => !!props.comparison && normalizedData.value.
   >
     <p
       v-if="resolvedTitle"
+      ref="titleRef"
       class="big-value-title"
-      :class="titleClass"
+      :class="[titleClass, { 'is-truncated': isTitleTruncated }]"
       :style="{ color: titleColor }"
+      :title="isTitleTruncated ? resolvedTitle : undefined"
     >
       {{ resolvedTitle }}
     </p>
     <p
       v-if="subtitle"
+      ref="subtitleRef"
       class="big-value-subtitle"
+      :class="{ 'is-truncated': isSubtitleTruncated }"
       :style="{ color: subtitleColor }"
+      :title="isSubtitleTruncated ? subtitle : undefined"
     >
       {{ subtitle }}
     </p>
@@ -150,7 +172,7 @@ const hasComparison = computed(() => !!props.comparison && normalizedData.value.
         v-if="hasSparkline"
         :data="normalizedData"
         :dateCol="sparkline!"
-        :valueCol="value"
+        :valueCol="sparklineY ?? value"
         :type="sparklineType"
         :color="sparklineColor"
         :yScale="sparklineYScale"
@@ -204,11 +226,25 @@ const hasComparison = computed(() => !!props.comparison && normalizedData.value.
   word-break: break-word;
 }
 
+.big-value-title,
+.big-value-subtitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.big-value-title.is-truncated,
+.big-value-subtitle.is-truncated {
+  mask-image: linear-gradient(to right, black 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black 80%, transparent 100%);
+}
+
 .big-value-title {
   font-size: 14px;
   font-weight: 700;
   line-height: 1;
   margin: 0;
+  max-width: 160px;
 }
 
 .big-value-subtitle {
@@ -216,6 +252,7 @@ const hasComparison = computed(() => !!props.comparison && normalizedData.value.
   font-weight: 400;
   line-height: 1.4;
   margin: 2px 0 0 0;
+  max-width: 200px;
 }
 
 .big-value-main {
