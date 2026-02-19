@@ -53,7 +53,6 @@ const subtitleColor = computed(() => theme.value.colors['base-content-muted']);
 .chart-title-icon {
   width: 24px;
   height: 24px;
-  opacity: 0.6;
   margin: 0 0 15px;
   display: block;
 }
