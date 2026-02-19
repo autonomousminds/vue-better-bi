@@ -54,7 +54,7 @@ const subtitleColor = computed(() => theme.value.colors['base-content-muted']);
   width: 24px;
   height: 24px;
   opacity: 0.6;
-  margin: 0 0 6px 0;
+  margin: 0 0 15px;
   display: block;
 }
 

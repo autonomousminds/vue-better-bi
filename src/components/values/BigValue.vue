@@ -286,10 +286,9 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
 }
 
 .big-value-title-icon {
-  width: 20px;
-  height: 20px;
-  opacity: 0.6;
-  margin: 0 0 4px 0;
+  width: 30px;
+  height: 30px;
+  margin: 0 0 20px;
   display: block;
 }
 
