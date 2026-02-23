@@ -175,6 +175,18 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
     class="big-value"
     :style="{ minWidth: minWidth, maxWidth: maxWidth }"
   >
+    <template v-if="!data || data.length === 0">
+      <img
+        v-if="titleIcon"
+        :src="titleIcon"
+        class="big-value-title-icon"
+        alt=""
+      />
+      <p v-if="resolvedTitle" class="big-value-title" :style="{ color: titleColor }">{{ resolvedTitle }}</p>
+      <p v-if="subtitle" class="big-value-subtitle" :style="{ color: subtitleColor }">{{ subtitle }}</p>
+      <div class="empty-state empty-info">No data found</div>
+    </template>
+    <template v-else>
     <img
       v-if="titleIcon"
       :src="titleIcon"
@@ -268,6 +280,7 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
         <span class="big-value-comparison-label">{{ resolvedComparisonTitle }}</span>
       </template>
     </div>
+    </template>
   </div>
 </template>
 
@@ -364,6 +377,19 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
 .big-value-comparison-label {
   margin-left: 0.25rem;
   opacity: 0.6;
+}
+
+.empty-state {
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  margin-top: 4px;
+}
+
+.empty-info {
+  background-color: rgba(107, 114, 128, 0.06);
+  border: 1px solid rgba(107, 114, 128, 0.15);
+  color: #6b7280;
 }
 </style>
 

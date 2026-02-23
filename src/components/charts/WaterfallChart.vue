@@ -373,6 +373,7 @@ const hovering = ref(false);
 <template>
   <EChartsBase
     :config="chartConfig"
+    :data="props.data"
     :title="props.title"
     :title-icon="props.titleIcon"
     :subtitle="props.subtitle"

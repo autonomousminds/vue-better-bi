@@ -36,6 +36,7 @@ interface Props {
   swapXY?: boolean;
   xAxisLabelOverflow?: 'break' | 'truncate';
   backgroundColor?: string;
+  data?: Record<string, unknown>[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -259,6 +260,7 @@ defineExpose({
     :title-icon="props.titleIcon"
     :subtitle="props.subtitle"
     :backgroundColor="props.backgroundColor"
+    :data="props.data"
     @mouseenter="hovering = true"
     @mouseleave="hovering = false"
   >
