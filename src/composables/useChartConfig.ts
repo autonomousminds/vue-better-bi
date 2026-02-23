@@ -482,7 +482,7 @@ export function useChartConfig(
           nameGap: 30
         };
 
-    const hasY2 = !swapXY && y2Count.value > 0;
+    const hasY2 = y2Count.value > 0;
 
     // Compute axis colors (only when dual axis is active)
     const colorPalette = getColorPalette?.();
@@ -539,9 +539,9 @@ export function useChartConfig(
           boundaryGap: ['0%', '1%'] as [string, string]
         };
 
-    // Build yAxis config — array when y2 exists, single object otherwise
+    // Build yAxis config — array when y2 exists (non-swapXY), single object otherwise
     let yAxisConfig: EChartsOption['yAxis'];
-    if (hasY2) {
+    if (hasY2 && !swapXY) {
       const secondaryYAxisConfig = {
         type: 'value' as const,
         alignTicks: true,
@@ -565,6 +565,29 @@ export function useChartConfig(
       yAxisConfig = [primaryYAxisConfig, secondaryYAxisConfig];
     } else {
       yAxisConfig = primaryYAxisConfig;
+    }
+
+    // Build xAxis config — array when swapXY + y2 (secondary value axis on bottom)
+    let xAxisFinal: EChartsOption['xAxis'] = xAxisConfig;
+    if (swapXY && hasY2) {
+      const secondaryXAxisConfig = {
+        type: 'value' as const,
+        position: 'bottom' as const,
+        alignTicks: true,
+        splitLine: { show: props.y2Gridlines ?? false },
+        axisLine: { show: props.y2Baseline, onZero: false },
+        axisTick: { show: props.y2TickMarks },
+        axisLabel: {
+          show: props.y2AxisLabels !== false,
+          hideOverlap: true,
+          color: y2AxisColorValue,
+          formatter: (value: number) => formatAxisValue(value, formats.value.y2, unitSummaries.value.y2)
+        },
+        min: props.y2Min,
+        max: props.y2Max,
+        scale: props.y2Scale,
+      };
+      xAxisFinal = [xAxisConfig, secondaryXAxisConfig];
     }
 
     // Tooltip config
@@ -594,7 +617,7 @@ export function useChartConfig(
         top: chartTop,
         containLabel: true
       },
-      xAxis: xAxisConfig,
+      xAxis: xAxisFinal,
       yAxis: yAxisConfig,
       series: [],
       animation: true
@@ -642,6 +665,14 @@ export function getSeriesConfig(
   } = options;
 
   const seriesConfigs: SeriesConfig[] = [];
+
+  // When swapXY, the value axis is xAxis, so y2 uses xAxisIndex instead of yAxisIndex
+  function axisIndexProps(axisIndex: number): { yAxisIndex: number; xAxisIndex?: number } {
+    if (swapXY && axisIndex === 1) {
+      return { yAxisIndex: 0, xAxisIndex: 1 };
+    }
+    return { yAxisIndex: axisIndex };
+  }
 
   // Combine y and y2 columns with their axis indices
   const yList: Array<[string, number]> = [];
@@ -723,7 +754,7 @@ export function getSeriesConfig(
           data: fillMissingData
             ? buildFilledSeriesData(allXValues, filteredData, yCol)
             : buildSeriesData(filteredData, yCol),
-          yAxisIndex: 0,
+          ...axisIndexProps(0),
           ...baseConfig
         });
       }
@@ -734,7 +765,7 @@ export function getSeriesConfig(
       seriesConfigs.push({
         name: columnSummary[y2Col]?.title || y2Col,
         data: buildAggregatedSeriesData(data, y2Col),
-        yAxisIndex: 1,
+        ...axisIndexProps(1),
         ...baseConfig
       });
     }
@@ -749,17 +780,17 @@ export function getSeriesConfig(
         data: fillMissingData
           ? buildFilledSeriesData(allXValues, filteredData, yList[0][0])
           : buildSeriesData(filteredData, yList[0][0]),
-        yAxisIndex: yList[0][1],
+        ...axisIndexProps(yList[0][1]),
         ...baseConfig
       });
     }
   } else if (yList.length > 1) {
     // Multiple y/y2 columns without series grouping
-    for (const [yCol, yAxisIndex] of yList) {
+    for (const [yCol, axisIndex] of yList) {
       seriesConfigs.push({
         name: columnSummary[yCol]?.title || yCol,
         data: buildSeriesData(data, yCol),
-        yAxisIndex,
+        ...axisIndexProps(axisIndex),
         ...baseConfig
       });
     }
@@ -768,7 +799,7 @@ export function getSeriesConfig(
     seriesConfigs.push({
       name: columnSummary[yList[0][0]]?.title || yList[0][0],
       data: buildSeriesData(data, yList[0][0]),
-      yAxisIndex: yList[0][1],
+      ...axisIndexProps(yList[0][1]),
       ...baseConfig
     });
   }

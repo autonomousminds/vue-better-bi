@@ -143,8 +143,12 @@ const seriesData = computed(() => {
   // Apply y2SeriesType: change y2 series to the specified type (default: 'line')
   if (props.y2) {
     const y2Type = props.y2SeriesType || 'line';
+    // When swapXY, y2 series use xAxisIndex=1 instead of yAxisIndex=1
+    const isY2Series = props.swapXY
+      ? (s: typeof allSeries[number]) => s.xAxisIndex === 1
+      : (s: typeof allSeries[number]) => s.yAxisIndex === 1;
     for (let i = 0; i < allSeries.length; i++) {
-      if (allSeries[i].yAxisIndex === 1) {
+      if (isY2Series(allSeries[i])) {
         allSeries[i].type = y2Type;
         allSeries[i].stack = undefined;
         // Add line styling for line type y2 series
