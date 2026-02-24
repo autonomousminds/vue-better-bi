@@ -12,7 +12,7 @@ import ChartFooter from '../core/ChartFooter.vue';
 import { useChartConfig, getSeriesConfig } from '../../composables/useChartConfig';
 import { useThemeStores } from '../../composables/useTheme';
 import { useInteractiveFeatures } from '../../composables/useInteractiveFeatures';
-import { formatValue } from '../../utils/formatting';
+import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
 
 const props = withDefaults(defineProps<LineChartProps>(), {
   lineType: 'solid',
@@ -126,12 +126,17 @@ const lineSeriesConfig = computed<Partial<SeriesConfig>>(() => {
       position: props.labelPosition || 'top',
       fontSize: props.labelSize || 11,
       color: labelColorResolved.value,
-      formatter: (params: { value: unknown[] }) => {
+      formatter: (params: { value: unknown[]; seriesIndex: number }) => {
         const value = params.value[1];
-        if (props.labelFmt || props.yLabelFmt) {
-          return formatValue(value, formats.value.y, unitSummaries.value.y);
-        }
-        return String(value);
+        if (value === 0 || value == null) return '';
+        const isY2 = seriesData.value[params.seriesIndex]?.yAxisIndex === 1;
+        const labelFmt = isY2
+          ? (props.y2LabelFmt || props.labelFmt)
+          : (props.yLabelFmt || props.labelFmt);
+        const format = labelFmt
+          ? getFormatObjectFromString(labelFmt)
+          : (isY2 ? formats.value.y2 : formats.value.y);
+        return formatValue(value, format, isY2 ? unitSummaries.value.y2 : unitSummaries.value.y);
       }
     } : undefined,
     emphasis: {

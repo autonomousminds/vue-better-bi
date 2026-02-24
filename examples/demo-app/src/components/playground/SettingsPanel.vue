@@ -43,7 +43,7 @@ function isDefaultOpen(groupName: string): boolean {
     </div>
     <div class="settings-body">
       <template v-for="(props, groupName) in groupedProps" :key="groupName">
-        <ControlGroup :label="String(groupName)" :defaultOpen="isDefaultOpen(String(groupName))">
+        <ControlGroup v-if="props.some(p => isVisible(p))" :label="String(groupName)" :defaultOpen="isDefaultOpen(String(groupName))">
           <template v-for="prop in props" :key="prop.name">
             <template v-if="isVisible(prop)">
               <PropControl

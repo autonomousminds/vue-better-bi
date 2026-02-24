@@ -13,7 +13,7 @@ import ChartFooter from '../core/ChartFooter.vue';
 import { useChartConfig } from '../../composables/useChartConfig';
 import { useThemeStores } from '../../composables/useTheme';
 import { useInteractiveFeatures } from '../../composables/useInteractiveFeatures';
-import { formatValue } from '../../utils/formatting';
+import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
 
 const props = withDefaults(defineProps<WaterfallChartProps>(), {
   sort: false,
@@ -162,10 +162,9 @@ const labelFormatter = computed(() => {
     formatter: (params: { value: number }) => {
       const value = params.value;
       if (value === 0) return '';
-      if (props.labelFmt || props.yLabelFmt) {
-        return formatValue(value, formats.value.y, unitSummaries.value.y);
-      }
-      return String(value);
+      const labelFmt = props.yLabelFmt || props.labelFmt;
+      const format = labelFmt ? getFormatObjectFromString(labelFmt) : formats.value.y;
+      return formatValue(value, format, unitSummaries.value.y);
     }
   };
 });
@@ -235,10 +234,9 @@ const chartConfig = computed<EChartsOption>(() => {
         const value = params.value;
         if (value === 0) return '';
         const displayValue = -value;
-        if (props.labelFmt || props.yLabelFmt) {
-          return formatValue(displayValue, formats.value.y, unitSummaries.value.y);
-        }
-        return String(displayValue);
+        const labelFmt = props.yLabelFmt || props.labelFmt;
+        const format = labelFmt ? getFormatObjectFromString(labelFmt) : formats.value.y;
+        return formatValue(displayValue, format, unitSummaries.value.y);
       }
     } : undefined,
     data: wf.negative
@@ -309,9 +307,7 @@ const chartConfig = computed<EChartsOption>(() => {
       const category = wf.categories[dataIndex];
       const rawValue = wf.rawValues[dataIndex];
 
-      const formattedValue = (props.yFmt || props.labelFmt)
-        ? formatValue(rawValue, formats.value.y, unitSummaries.value.y)
-        : String(rawValue);
+      const formattedValue = formatValue(rawValue, formats.value.y, unitSummaries.value.y);
 
       // Determine bar type for color
       const isTotal = wf.total[dataIndex] !== 0;

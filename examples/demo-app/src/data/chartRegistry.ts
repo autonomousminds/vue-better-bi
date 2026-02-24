@@ -8,6 +8,8 @@ import {
   pointMapProps, bubbleMapProps,
   dataTableProps,
   bigValueProps,
+  costCountBarChartProps,
+  usageAreaChartProps,
 } from './propDefinitions';
 
 export const chartRegistry: ChartDefinition[] = [
@@ -163,6 +165,27 @@ export const chartRegistry: ChartDefinition[] = [
     supportsReferences: false,
     props: dataTableProps,
     sampleDataKey: 'table',
+  },
+  {
+    id: 'cost-count-bar', name: 'Cost & Count by Type', componentName: 'BarChart',
+    category: 'Standard Charts',
+    description: 'Horizontal bar chart with cost by interaction type and count on secondary axis',
+    dataBindings: { x: 'usage_type', y: 'total_cost' },
+    supportsReferences: true,
+    props: costCountBarChartProps,
+    sampleDataKey: 'costCount',
+  },
+  {
+    id: 'usage-area', name: 'Usage Requests', componentName: 'AreaChart',
+    category: 'Standard Charts',
+    description: 'Stacked area chart showing daily requests by usage type over time',
+    dataBindings: {
+      x: 'date', y: ['requests'], series: 'usage_type',
+      colorPalette: ['#236aa4', '#45a1bf', '#a5cdee', '#8dacbf', '#85c7c6'],
+    },
+    supportsReferences: true,
+    props: usageAreaChartProps,
+    sampleDataKey: 'usageRequests',
   },
   {
     id: 'big-value', name: 'Big Value', componentName: 'BigValue',

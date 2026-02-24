@@ -25,6 +25,7 @@ export interface InteractiveFeaturesOptions {
   animation?: MaybeRefOrGetter<AnimationProp | undefined>;
   tooltip?: MaybeRefOrGetter<TooltipProp | undefined>;
   swapXY?: MaybeRefOrGetter<boolean | undefined>;
+  y2Count?: MaybeRefOrGetter<number | undefined>;
   chartType?: 'line' | 'bar' | 'area' | 'scatter';
 }
 
@@ -127,6 +128,8 @@ export function useInteractiveFeatures(options: InteractiveFeaturesOptions): Use
       ? { ...ZOOM_DEFAULTS }
       : { ...ZOOM_DEFAULTS, ...zoomProp };
 
+    const y2Active = toValue(options.y2Count) || 0;
+
     const zoomComponents: EChartsOption['dataZoom'] = [];
     const xAxisKey = swapXY ? 'yAxisIndex' : 'xAxisIndex';
     const yAxisKey = swapXY ? 'xAxisIndex' : 'yAxisIndex';
@@ -134,11 +137,13 @@ export function useInteractiveFeatures(options: InteractiveFeaturesOptions): Use
     // Helper to add zoom components for an axis
     const addAxisZoom = (axisKey: string, isY: boolean) => {
       const isVertical = (isY && !swapXY) || (!isY && swapXY);
+      // When targeting y-axis and y2 exists, zoom both axes together
+      const axisTarget = (isY && y2Active > 0) ? [0, 1] : 0;
 
       if (config.type === 'slider' || config.type === 'both') {
         zoomComponents.push({
           type: 'slider',
-          [axisKey]: 0,
+          [axisKey]: axisTarget,
           start: config.start,
           end: config.end,
           minSpan: config.minSpan,
@@ -155,7 +160,7 @@ export function useInteractiveFeatures(options: InteractiveFeaturesOptions): Use
       if (config.type === 'inside' || config.type === 'both') {
         zoomComponents.push({
           type: 'inside',
-          [axisKey]: 0,
+          [axisKey]: axisTarget,
           start: config.start,
           end: config.end,
           minSpan: config.minSpan,

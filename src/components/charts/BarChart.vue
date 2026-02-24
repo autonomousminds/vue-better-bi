@@ -12,7 +12,7 @@ import ChartFooter from '../core/ChartFooter.vue';
 import { useChartConfig, getSeriesConfig } from '../../composables/useChartConfig';
 import { useThemeStores } from '../../composables/useTheme';
 import { useInteractiveFeatures } from '../../composables/useInteractiveFeatures';
-import { formatValue } from '../../utils/formatting';
+import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
 
 const props = withDefaults(defineProps<BarChartProps>(), {
   type: 'stacked',
@@ -33,6 +33,16 @@ const emit = defineEmits<{
 
 const { resolveColor, resolveColorPalette, resolveColorsObject } = useThemeStores();
 
+// Evidence rejects y2 on horizontal charts — silently ignore y2 when swapXY
+const effectiveY2 = computed(() => props.swapXY ? undefined : props.y2);
+
+// Effective y2 count for zoom targeting
+const effectiveY2Count = computed(() => {
+  const y2 = effectiveY2.value;
+  if (!y2) return 0;
+  return Array.isArray(y2) ? y2.length : 1;
+});
+
 // Interactive features - use getters for reactivity
 const {
   interactiveConfig,
@@ -44,6 +54,7 @@ const {
   animation: () => props.animation,
   tooltip: () => props.tooltip,
   swapXY: () => props.swapXY,
+  y2Count: () => effectiveY2Count.value,
   chartType: 'bar'
 });
 
@@ -105,12 +116,17 @@ const barSeriesConfig = computed<Partial<SeriesConfig>>(() => {
       position: props.labelPosition || (props.swapXY ? 'right' : 'top'),
       fontSize: props.labelSize || 11,
       color: labelColorResolved.value,
-      formatter: (params: { value: unknown[] }) => {
+      formatter: (params: { value: unknown[]; seriesIndex: number }) => {
         const value = props.swapXY ? params.value[0] : params.value[1];
-        if (props.labelFmt || props.yLabelFmt) {
-          return formatValue(value, formats.value.y, unitSummaries.value.y);
-        }
-        return String(value);
+        if (value === 0 || value == null) return '';
+        const isY2 = seriesData.value[params.seriesIndex]?.yAxisIndex === 1;
+        const labelFmt = isY2
+          ? (props.y2LabelFmt || props.labelFmt)
+          : (props.yLabelFmt || props.labelFmt);
+        const format = labelFmt
+          ? getFormatObjectFromString(labelFmt)
+          : (isY2 ? formats.value.y2 : formats.value.y);
+        return formatValue(value, format, isY2 ? unitSummaries.value.y2 : unitSummaries.value.y);
       }
     } : undefined,
     emphasis: {
@@ -134,24 +150,19 @@ const seriesData = computed(() => {
     baseSeriesConfig,
     columnSummary.value,
     {
-      y2: props.y2,
+      y2: effectiveY2.value,
       seriesOrder: props.seriesOrder,
       fillMissingData: props.type === 'stacked' || props.type === 'stacked100'
     }
   );
 
   // Apply y2SeriesType: change y2 series to the specified type (default: 'line')
-  if (props.y2) {
+  if (effectiveY2.value) {
     const y2Type = props.y2SeriesType || 'line';
-    // When swapXY, y2 series use xAxisIndex=1 instead of yAxisIndex=1
-    const isY2Series = props.swapXY
-      ? (s: typeof allSeries[number]) => s.xAxisIndex === 1
-      : (s: typeof allSeries[number]) => s.yAxisIndex === 1;
     for (let i = 0; i < allSeries.length; i++) {
-      if (isY2Series(allSeries[i])) {
+      if (allSeries[i].yAxisIndex === 1) {
         allSeries[i].type = y2Type;
         allSeries[i].stack = undefined;
-        // Add line styling for line type y2 series
         if (y2Type === 'line') {
           allSeries[i].symbol = 'circle';
           allSeries[i].symbolSize = 6;

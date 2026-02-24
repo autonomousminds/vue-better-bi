@@ -266,6 +266,41 @@ export const bigValueData: Record<string, unknown>[] = [
 ];
 
 
+export const costCountData = [
+  { usage_type: 'Data Lookup', cnt: 7241, total_cost: 3318.97, avg_cost: 0.46 },
+  { usage_type: 'Simple Chat', cnt: 4684, total_cost: 1144.90, avg_cost: 0.24 },
+  { usage_type: 'Dashboard Updating', cnt: 1069, total_cost: 1307.78, avg_cost: 1.22 },
+  { usage_type: 'Dashboard Creation', cnt: 240, total_cost: 432.69, avg_cost: 1.80 },
+  { usage_type: 'Dashboard Preperation', cnt: 60, total_cost: 73.45, avg_cost: 1.22 },
+  { usage_type: 'Sandbox', cnt: 28, total_cost: 16.34, avg_cost: 0.58 },
+];
+
+export const usageRequestsData = (() => {
+  const types = ['Data Lookup', 'Simple Chat', 'Dashboard Updating', 'Dashboard Creation'];
+  const baseValues: Record<string, [number, number]> = {
+    'Data Lookup': [15, 30],
+    'Simple Chat': [8, 20],
+    'Dashboard Updating': [2, 8],
+    'Dashboard Creation': [0, 3],
+  };
+  const data: Record<string, unknown>[] = [];
+  const start = new Date(2026, 0, 25); // Jan 25, 2026
+  for (let d = 0; d < 29; d++) {
+    const date = new Date(start);
+    date.setDate(date.getDate() + d);
+    const iso = date.toISOString().replace(/T.*/, 'T00:00:00Z');
+    for (const t of types) {
+      const [lo, hi] = baseValues[t];
+      // Add a slight weekly pattern (lower on weekends)
+      const dow = date.getDay();
+      const weekendFactor = (dow === 0 || dow === 6) ? 0.4 : 1;
+      const requests = Math.round((lo + Math.random() * (hi - lo)) * weekendFactor);
+      data.push({ date: iso, usage_type: t, requests });
+    }
+  }
+  return data;
+})();
+
 export const sampleDatasets: Record<string, Record<string, unknown>[]> = {
   sales: salesData,
   timeSeries: timeSeriesData,
@@ -285,4 +320,6 @@ export const sampleDatasets: Record<string, Record<string, unknown>[]> = {
   bubbleMap: countryData,
   table: tableData,
   bigValue: bigValueData,
+  costCount: costCountData,
+  usageRequests: usageRequestsData,
 };
