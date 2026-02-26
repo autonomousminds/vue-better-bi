@@ -64,7 +64,7 @@ const {
   unitSummaries: _unitSummaries
 } = useChartConfig(props, {
   chartType: 'Bubble Chart',
-  xType: props.xType || 'value',
+  xType: props.xType,
   resolvedColorPalette: () => colorPaletteResolved.value,
   resolvedYAxisColor: () => yAxisColorResolved.value,
   resolvedY2AxisColor: () => y2AxisColorResolved.value
@@ -125,28 +125,29 @@ const seriesData = computed(() => {
     props.x,
     props.y,
     props.series,
-    false,
+    props.swapXY ?? false,
     bubbleSeriesConfig.value,
     columnSummary.value,
     {
       size: props.size,
-      tooltipTitle: props.tooltipTitle
+      tooltipTitle: props.tooltipTitle,
+      seriesLabelFmt: props.seriesLabelFmt
     }
   );
 
-  // Add symbol size function to each series
-  const { min: sizeMin, max: sizeMax } = sizeRange.value;
-  const sizeSpan = sizeMax - sizeMin || 1;
+  // Add symbol size function to each series using sqrt-area-proportional scaling
+  const { max: sizeMax } = sizeRange.value;
+  const maxSizeSq = Math.pow(props.maxSize!, 2);
 
   return baseSeries.map((series) => ({
     ...series,
     symbolSize: (data: unknown[]) => {
       const sizeValue = data[2] as number;
-      if (sizeValue == null) return props.minSize;
+      if (sizeValue == null || sizeValue < 0 || sizeMax <= 0) return 0;
 
-      // Normalize to 0-1 range then scale to min-max size
-      const normalized = (sizeValue - sizeMin) / sizeSpan;
-      return props.minSize! + normalized * (props.maxSize! - props.minSize!);
+      // sqrt-area-proportional: area is proportional to data value
+      const radius = Math.sqrt((sizeValue / sizeMax) * maxSizeSq);
+      return Math.max(props.minSize!, radius);
     }
   }));
 });
@@ -180,10 +181,14 @@ const chartConfig = computed<EChartsOption>(() => {
     }
   };
 
-  // Ensure x-axis is value type
-  if (!props.xType) {
-    (config.xAxis as Record<string, unknown>).type = 'value';
+  // Axis fixes for bubble charts
+  const xAxis = config.xAxis as Record<string, unknown>;
+  const yAxis = config.yAxis as Record<string, unknown>;
+  if (xAxis.type !== 'category') {
+    xAxis.boundaryGap = ['1%', '2%'];
   }
+  yAxis.scale = true;
+  yAxis.boundaryGap = ['1%', '1%'];
 
   return config;
 });
@@ -205,6 +210,7 @@ const hovering = ref(false);
     :series-colors="seriesColorsResolved as Record<string, string>"
     :echarts-options="props.echartsOptions"
     :series-options="props.seriesOptions"
+    :swap-x-y="props.swapXY"
     :background-color="props.backgroundColor"
     @click="emit('click', $event)"
     @mouseenter="hovering = true"

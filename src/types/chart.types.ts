@@ -230,6 +230,7 @@ export interface BaseChartProps {
   xAxisLabels?: boolean;
   showAllXAxisLabels?: boolean;
   xLabelWrap?: boolean;
+  xAxisLabelRotate?: number;
 
   // Y-Axis
   yType?: YAxisType;
@@ -286,6 +287,13 @@ export interface BaseChartProps {
   // Padding
   leftPadding?: string;
   rightPadding?: string;
+
+  // Empty state handling
+  emptySet?: 'pass' | 'warn' | 'error';
+  emptyMessage?: string;
+
+  // Debug
+  printEchartsConfig?: boolean;
 }
 
 export interface BarChartProps extends BaseChartProps {
@@ -357,6 +365,7 @@ export interface ScatterPlotProps extends BaseChartProps {
   pointShape?: MarkerShape;
   outlineColor?: ColorInput;
   outlineWidth?: number;
+  seriesLabelFmt?: string;
 }
 
 export interface BubbleChartProps extends BaseChartProps {
@@ -366,6 +375,7 @@ export interface BubbleChartProps extends BaseChartProps {
   maxSize?: number;
   outlineColor?: ColorInput;
   outlineWidth?: number;
+  seriesLabelFmt?: string;
 }
 
 export interface BoxPlotProps extends BaseChartProps {
@@ -374,6 +384,8 @@ export interface BoxPlotProps extends BaseChartProps {
   midpoint?: string;
   confidenceIntervalLower?: string;
   confidenceIntervalUpper?: string;
+  confidenceInterval?: string;
+  color?: string;
   fillColor?: ColorInput;
   fillOpacity?: number;
   outlineColor?: ColorInput;
@@ -403,6 +415,13 @@ export interface FunnelChartProps {
   valueFmt?: string;
   percentFmt?: string;
   showPercent?: boolean;
+  funnelSort?: 'ascending' | 'descending' | 'none';
+  funnelAlign?: 'center' | 'left' | 'right';
+  labelPosition?: 'inside' | 'outside' | 'left' | 'right';
+  outlineColor?: ColorInput;
+  outlineWidth?: number;
+  emptySet?: 'pass' | 'warn' | 'error';
+  emptyMessage?: string;
   echartsOptions?: EChartsOption;
   renderer?: ChartRenderer;
   downloadableData?: boolean;
@@ -485,6 +504,14 @@ export interface HeatmapProps {
   valueLabels?: boolean;
   mobileValueLabels?: boolean;
   zeroDisplay?: string;
+  xSort?: string;
+  ySort?: string;
+  xSortOrder?: 'asc' | 'desc';
+  ySortOrder?: 'asc' | 'desc';
+  cellHeight?: number;
+  borders?: boolean;
+  xAxisPosition?: 'top' | 'bottom';
+  filter?: boolean;
   echartsOptions?: EChartsOption;
   renderer?: ChartRenderer;
   downloadableData?: boolean;
@@ -506,6 +533,9 @@ export interface CalendarHeatmapProps {
   valueFmt?: string;
   min?: number;
   max?: number;
+  yearLabel?: boolean;
+  monthLabel?: boolean;
+  dayLabel?: boolean;
   echartsOptions?: EChartsOption;
   renderer?: ChartRenderer;
   downloadableData?: boolean;
@@ -515,9 +545,9 @@ export interface CalendarHeatmapProps {
 
 export interface SankeyDiagramProps {
   data: DataRecord[];
-  source: string;
-  target: string;
-  value: string;
+  source?: string;
+  target?: string;
+  value?: string;
   title?: string;
   titleIcon?: string;
   subtitle?: string;
@@ -530,6 +560,16 @@ export interface SankeyDiagramProps {
   nodeWidth?: number;
   nodeGap?: number;
   nodeAlign?: 'left' | 'right' | 'justify';
+  nodeLabels?: 'name' | 'value' | 'full' | 'none';
+  linkLabels?: 'value' | 'percent' | 'full' | 'none';
+  linkColor?: 'source' | 'target' | 'gradient' | string;
+  sort?: boolean;
+  depthOverride?: Record<string, number>;
+  outlineColor?: ColorInput;
+  outlineWidth?: number;
+  seriesLabelFmt?: string;
+  emptySet?: 'pass' | 'warn' | 'error';
+  emptyMessage?: string;
   echartsOptions?: EChartsOption;
   renderer?: ChartRenderer;
   downloadableData?: boolean;
@@ -589,6 +629,8 @@ export interface USMapProps {
   min?: number;
   max?: number;
   link?: string;
+  abbreviations?: boolean;
+  filter?: boolean;
   echartsOptions?: EChartsOption;
   renderer?: ChartRenderer;
   downloadableData?: boolean;
@@ -613,11 +655,26 @@ export interface AreaMapProps {
   min?: number;
   max?: number;
   link?: string;
+  borderColor?: string;
+  borderWidth?: number;
+  opacity?: number;
+  filter?: boolean;
   echartsOptions?: EChartsOption;
   renderer?: ChartRenderer;
   downloadableData?: boolean;
   downloadableImage?: boolean;
   backgroundColor?: string;
+}
+
+export interface PointMapTooltipItem {
+  /** Column name in the data */
+  id: string;
+  /** Format string (e.g. 'num0', 'usd', 'pct1') */
+  fmt?: string;
+  /** Override the displayed column name */
+  title?: string;
+  /** Whether to show the column name label */
+  showColumnName?: boolean;
 }
 
 export interface PointMapProps {
@@ -643,6 +700,26 @@ export interface PointMapProps {
   borderColor?: string;
   borderWidth?: number;
   tooltipType?: 'hover' | 'click';
+  colorPalette?: string[];
+  legendPosition?: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
+  /** Whether to show the legend. Default: true */
+  legend?: boolean;
+  /** Force legend type: 'categorical' or 'scalar'. Auto-detected if not set. */
+  legendType?: 'categorical' | 'scalar';
+  /** Custom tooltip configuration */
+  tooltip?: PointMapTooltipItem[];
+  /** Selected point fill color */
+  selectedColor?: string;
+  /** Selected point border color */
+  selectedBorderColor?: string;
+  /** Selected point border width */
+  selectedBorderWidth?: number;
+  /** Selected point opacity */
+  selectedOpacity?: number;
+  /** How to handle empty data: 'pass' shows empty map, 'warn' shows message, 'error' shows error */
+  emptySet?: 'pass' | 'warn' | 'error';
+  /** Message to show when data is empty */
+  emptyMessage?: string;
   downloadableData?: boolean;
   downloadableImage?: boolean;
   backgroundColor?: string;
@@ -656,10 +733,13 @@ export interface BubbleMapProps extends PointMapProps {
 }
 
 export interface ReferenceLineProps {
+  data?: Record<string, any>[];
   y?: number;
   x?: string | number;
+  x2?: string | number;
+  y2?: string | number;
   label?: string;
-  labelPosition?: 'start' | 'middle' | 'end';
+  labelPosition?: 'start' | 'middle' | 'end' | 'aboveStart' | 'aboveCenter' | 'aboveEnd' | 'belowStart' | 'belowCenter' | 'belowEnd';
   color?: ColorInput;
   lineType?: LineType;
   lineWidth?: number;
@@ -667,18 +747,30 @@ export interface ReferenceLineProps {
   labelColor?: ColorInput;
   labelBackgroundColor?: ColorInput;
   labelPadding?: number;
+  labelBorderWidth?: number;
+  labelBorderRadius?: number;
+  labelBorderColor?: ColorInput;
   fontSize?: number;
+  symbol?: string;
+  symbolSize?: number;
+  bold?: boolean;
+  italic?: boolean;
 }
 
 export interface ReferenceAreaProps {
+  data?: Record<string, any>[];
   xMin?: string | number;
   xMax?: string | number;
   yMin?: number;
   yMax?: number;
   label?: string;
+  labelPosition?: string;
   color?: ColorInput;
   opacity?: number;
   labelColor?: ColorInput;
+  labelBackgroundColor?: ColorInput;
+  labelPadding?: number;
+  fontSize?: number;
   border?: boolean;
   borderColor?: ColorInput;
   borderType?: LineType;
@@ -686,6 +778,7 @@ export interface ReferenceAreaProps {
 }
 
 export interface ReferencePointProps {
+  data?: Record<string, any>[];
   x: string | number;
   y: number;
   label?: string;
@@ -693,10 +786,19 @@ export interface ReferencePointProps {
   color?: ColorInput;
   symbol?: MarkerShape;
   symbolSize?: number;
+  symbolOpacity?: number;
+  symbolBorderWidth?: number;
+  symbolBorderColor?: ColorInput;
   labelColor?: ColorInput;
   labelBackgroundColor?: ColorInput;
   labelPadding?: number;
+  labelWidth?: number | 'fit';
+  labelBorderWidth?: number;
+  labelBorderRadius?: number;
+  labelBorderColor?: ColorInput;
   fontSize?: number;
+  bold?: boolean;
+  italic?: boolean;
 }
 
 export interface SeriesConfig {

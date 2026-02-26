@@ -184,6 +184,7 @@ const seriesData = computed(() => {
     {
       y2: props.y2,
       seriesOrder: props.seriesOrder,
+      seriesLabelFmt: props.seriesLabelFmt,
       fillMissingData: !!props.series && (props.type === 'stacked' || props.type === 'stacked100')
     }
   );

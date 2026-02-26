@@ -57,8 +57,8 @@ const sizeRange = computed(() => {
 const bubbleData = computed(() => {
   if (!props.data?.length || !props.lat || !props.long || !props.size) return [];
 
-  const { min: sizeMin, max: sizeMax } = sizeRange.value;
-  const sizeSpan = sizeMax - sizeMin || 1;
+  const { max: sizeMax } = sizeRange.value;
+  const maxSizeSq = Math.pow(props.maxSize!, 2);
 
   return props.data
     .map((row) => {
@@ -68,8 +68,9 @@ const bubbleData = computed(() => {
       const value = props.value ? (row[props.value] as number) : undefined;
       const name = props.name ? String(row[props.name]) : undefined;
 
-      const normalized = (size - sizeMin) / sizeSpan;
-      const radius = props.minSize! + normalized * (props.maxSize! - props.minSize!);
+      // sqrt-area-proportional: area is proportional to data value
+      const rawRadius = sizeMax > 0 && size >= 0 ? Math.sqrt((size / sizeMax) * maxSizeSq) : 0;
+      const radius = Math.max(props.minSize!, rawRadius);
 
       return { lat, lng, size, value, name, radius, row };
     })

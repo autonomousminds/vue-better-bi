@@ -101,4 +101,16 @@ export interface BigValueProps {
 
   /** CSS class for the comparison */
   comparisonClass?: string;
+
+  /** Show negative values in red */
+  redNegatives?: boolean;
+
+  /** Custom color for the main value (CSS color or theme color name) */
+  valueColor?: string;
+
+  /** Behavior when data is empty: 'pass' shows nothing, 'warn' shows warning, 'error' shows error */
+  emptySet?: 'pass' | 'warn' | 'error';
+
+  /** Custom message to show when data is empty */
+  emptyMessage?: string;
 }

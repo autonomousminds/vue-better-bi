@@ -42,6 +42,14 @@ export const scatterData = [
   { age: 46, income: 98000, spending: 3600 }
 ];
 
+export const occupationBubbleData = [
+  { occupation: 'Professional', customer_count: 5606, avg_income: 226454 },
+  { occupation: 'Skilled Manual', customer_count: 4649, avg_income: 205786 },
+  { occupation: 'Management', customer_count: 3147, avg_income: 319002 },
+  { occupation: 'Clerical', customer_count: 3014, avg_income: 315169 },
+  { occupation: 'Manual', customer_count: 2453, avg_income: 297277 },
+];
+
 export const heatmapData = [
   { day: 'Mon', hour: '9am', value: 45 },
   { day: 'Mon', hour: '12pm', value: 78 },
@@ -265,47 +273,36 @@ export const bigValueData: Record<string, unknown>[] = [
   { date: '2025-01-28', orders: 400, current_orders: 400, prev_orders: 0 },
 ];
 
-
-export const costCountData = [
-  { usage_type: 'Data Lookup', cnt: 7241, total_cost: 3318.97, avg_cost: 0.46 },
-  { usage_type: 'Simple Chat', cnt: 4684, total_cost: 1144.90, avg_cost: 0.24 },
-  { usage_type: 'Dashboard Updating', cnt: 1069, total_cost: 1307.78, avg_cost: 1.22 },
-  { usage_type: 'Dashboard Creation', cnt: 240, total_cost: 432.69, avg_cost: 1.80 },
-  { usage_type: 'Dashboard Preperation', cnt: 60, total_cost: 73.45, avg_cost: 1.22 },
-  { usage_type: 'Sandbox', cnt: 28, total_cost: 16.34, avg_cost: 0.58 },
+export const brandProfitabilityData = [
+  { brand_name: 'Contoso', total_sales: 2075978588.57, gross_profit: 1164129424.04, profit_margin: 0.56 },
+  { brand_name: 'Fabrikam', total_sales: 1408217410.25, gross_profit: 805671129.78, profit_margin: 0.57 },
+  { brand_name: 'Proseware', total_sales: 1205475382.73, gross_profit: 700565604.91, profit_margin: 0.58 },
+  { brand_name: 'Litware', total_sales: 1180273556.29, gross_profit: 664680039.18, profit_margin: 0.56 },
+  { brand_name: 'Adventure Works', total_sales: 1037108694.87, gross_profit: 592768947.14, profit_margin: 0.57 },
+  { brand_name: 'Wide World Importers', total_sales: 764518731.27, gross_profit: 440364743.63, profit_margin: 0.57 },
+  { brand_name: 'The Phone Company', total_sales: 673525407.96, gross_profit: 379340915.54, profit_margin: 0.56 },
+  { brand_name: 'A. Datum', total_sales: 619803772.02, gross_profit: 367124746.39, profit_margin: 0.59 },
+  { brand_name: 'Southridge Video', total_sales: 441967832.04, gross_profit: 240610495.21, profit_margin: 0.54 },
+  { brand_name: 'Northwind Traders', total_sales: 418668917.24, gross_profit: 234655941.3, profit_margin: 0.56 },
+  { brand_name: 'Tailspin Toys', total_sales: 17174690.69, gross_profit: 9846456.21, profit_margin: 0.57 },
 ];
 
-export const usageRequestsData = (() => {
-  const types = ['Data Lookup', 'Simple Chat', 'Dashboard Updating', 'Dashboard Creation'];
-  const baseValues: Record<string, [number, number]> = {
-    'Data Lookup': [15, 30],
-    'Simple Chat': [8, 20],
-    'Dashboard Updating': [2, 8],
-    'Dashboard Creation': [0, 3],
-  };
-  const data: Record<string, unknown>[] = [];
-  const start = new Date(2026, 0, 25); // Jan 25, 2026
-  for (let d = 0; d < 29; d++) {
-    const date = new Date(start);
-    date.setDate(date.getDate() + d);
-    const iso = date.toISOString().replace(/T.*/, 'T00:00:00Z');
-    for (const t of types) {
-      const [lo, hi] = baseValues[t];
-      // Add a slight weekly pattern (lower on weekends)
-      const dow = date.getDay();
-      const weekendFactor = (dow === 0 || dow === 6) ? 0.4 : 1;
-      const requests = Math.round((lo + Math.random() * (hi - lo)) * weekendFactor);
-      data.push({ date: iso, usage_type: t, requests });
-    }
-  }
-  return data;
-})();
+export const productCategoryData = [
+  { category: 'Home Appliances', revenue: 421626658.47 },
+  { category: 'Computers', revenue: 266795197.02 },
+  { category: 'Cameras and camcorders', revenue: 240219234.36 },
+  { category: 'Cell phones', revenue: 192344183.21 },
+  { category: 'TV and Video', revenue: 178904512.88 },
+  { category: 'Audio', revenue: 134567890.15 },
+  { category: 'Music, Movies and Audio Books', revenue: 87234561.73 },
+  { category: 'Games and Toys', revenue: 52189043.64 },
+];
 
 export const sampleDatasets: Record<string, Record<string, unknown>[]> = {
   sales: salesData,
   timeSeries: timeSeriesData,
   scatter: scatterData,
-  bubble: scatterData,
+  bubble: occupationBubbleData,
   heatmap: heatmapData,
   funnel: funnelData,
   pie: pieData,
@@ -320,6 +317,6 @@ export const sampleDatasets: Record<string, Record<string, unknown>[]> = {
   bubbleMap: countryData,
   table: tableData,
   bigValue: bigValueData,
-  costCount: costCountData,
-  usageRequests: usageRequestsData,
+  brandProfitability: brandProfitabilityData,
+  productCategory: productCategoryData,
 };

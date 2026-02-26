@@ -85,6 +85,7 @@ export const xAxisProps: PropDefinition[] = [
   { name: 'xTickMarks', label: 'X Tick Marks', control: 'checkbox', defaultValue: false, group: 'X-Axis' },
   { name: 'showAllXAxisLabels', label: 'Show All X Labels', control: 'checkbox', defaultValue: false, group: 'X-Axis' },
   { name: 'xLabelWrap', label: 'Wrap X Labels', control: 'checkbox', defaultValue: false, group: 'X-Axis' },
+  { name: 'xAxisLabelRotate', label: 'X Label Rotation', control: 'slider', defaultValue: 0, group: 'X-Axis', min: 0, max: 90, step: 5 },
 ];
 
 export const yAxisProps: PropDefinition[] = [

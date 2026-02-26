@@ -63,7 +63,8 @@ export {
   USMap,
   AreaMap,
   PointMap,
-  BubbleMap
+  BubbleMap,
+  MapLegend
 } from './components/maps';
 
 // ============================================================================

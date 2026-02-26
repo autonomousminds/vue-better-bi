@@ -17,5 +17,5 @@ export { pointMapProps } from './pointMap';
 export { bubbleMapProps } from './bubbleMap';
 export { dataTableProps } from './dataTable';
 export { bigValueProps } from './bigValue';
-export { costCountBarChartProps } from './costCountBarChart';
-export { usageAreaChartProps } from './usageAreaChart';
+export { dualAxisBarChartProps } from './dualAxisBarChart';
+export { productCategoryTableProps } from './productCategoryTable';

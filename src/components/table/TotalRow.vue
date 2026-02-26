@@ -39,6 +39,27 @@ function getFormat(column: TableColumnConfig) {
   if (column.fmt) return getFormatObjectFromString(column.fmt);
   return colSummary.format;
 }
+
+const AGG_LABELS: Record<string, string> = {
+  sum: 'Sum',
+  mean: 'Mean',
+  median: 'Median',
+  min: 'Min',
+  max: 'Max',
+  count: 'Count',
+  countDistinct: 'Distinct',
+  weightedMean: 'Wt. Mean',
+};
+
+function getAggLabel(column: TableColumnConfig): string {
+  const agg = column.totalAgg || 'sum';
+  return AGG_LABELS[agg] || agg;
+}
+
+function hasMeaningfulAgg(column: TableColumnConfig): boolean {
+  const val = getAggValue(column);
+  return val !== null && val !== undefined && val !== '-';
+}
 </script>
 
 <template>
@@ -66,6 +87,7 @@ function getFormat(column: TableColumnConfig) {
         class="total-cell"
       >
         <template v-if="['sum', 'mean', 'weightedMean', 'median', 'min', 'max', 'count', 'countDistinct'].includes(column.totalAgg || 'sum')">
+          <span v-if="hasMeaningfulAgg(column)" class="agg-label">{{ getAggLabel(column) }}</span>
           <DeltaCell
             v-if="column.contentType === 'delta'"
             :value="Number(getAggValue(column))"
@@ -88,6 +110,7 @@ function getFormat(column: TableColumnConfig) {
           </template>
         </template>
         <template v-else-if="column.totalAgg">
+          <span v-if="hasMeaningfulAgg(column)" class="agg-label">{{ getAggLabel(column) }}</span>
           {{ column.totalFmt
             ? formatValue(column.totalAgg, getFormat(column), safeExtractColumn(column, columnSummary).columnUnitSummary)
             : column.totalAgg
@@ -105,5 +128,14 @@ function getFormat(column: TableColumnConfig) {
 
 .total-cell {
   border-top: 1px solid var(--table-border-strong-color, #999);
+}
+
+.agg-label {
+  font-size: 0.7em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--table-agg-label-color, #6b7280);
+  margin-right: 0.35em;
 }
 </style>

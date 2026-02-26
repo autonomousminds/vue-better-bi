@@ -1,6 +1,15 @@
 <script setup lang="ts">
 /**
  * FunnelChart component
+ *
+ * Matches Evidence's FunnelChart behavior:
+ * - Percentage base = first row value (top of funnel), not max
+ * - Exposes funnelSort, funnelAlign, labelPosition props
+ * - Uses props.outlineColor instead of hardcoded '#fff'
+ * - Shows formatted value (+ optional percent) in labels
+ * - Series name auto-generated from column name
+ * - minSize: '30%' to prevent tiny bottom segments
+ * - labelLayout: { hideOverlap: true }
  */
 
 import { computed, ref } from 'vue';
@@ -9,13 +18,16 @@ import type { FunnelChartProps } from '../../types';
 import EChartsBase from '../core/EChartsBase.vue';
 import ChartFooter from '../core/ChartFooter.vue';
 import { useThemeStores } from '../../composables/useTheme';
-import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
+import { formatValue, formatTitle, getFormatObjectFromString } from '../../utils/formatting';
 
 const props = withDefaults(defineProps<FunnelChartProps>(), {
   height: '400px',
   width: '100%',
   legend: true,
   showPercent: true,
+  funnelSort: 'descending',
+  funnelAlign: 'center',
+  labelPosition: 'inside',
   downloadableData: true,
   downloadableImage: true
 });
@@ -24,11 +36,15 @@ const emit = defineEmits<{
   (e: 'click', params: unknown): void;
 }>();
 
-const { resolveColorPalette } = useThemeStores();
+const { resolveColor, resolveColorPalette } = useThemeStores();
 
 // Resolve colors
 const colorPaletteResolved = computed(() =>
   resolveColorPalette(props.colorPalette || 'default').value
+);
+
+const outlineColorResolved = computed(() =>
+  props.outlineColor ? resolveColor(props.outlineColor).value : undefined
 );
 
 // Get format objects
@@ -39,23 +55,54 @@ const percentFormat = computed(() =>
   props.percentFmt ? getFormatObjectFromString(props.percentFmt) : { formatTag: 'pct1', formatCode: '#,##0.0%', valueType: 'number' as const }
 );
 
+// Determine column names
+const nameCol = computed(() => {
+  if (!props.data?.length) return '';
+  return props.name || Object.keys(props.data[0])[0];
+});
+
+const valueCol = computed(() => {
+  if (!props.data?.length) return '';
+  return props.value || Object.keys(props.data[0])[1];
+});
+
 // Process funnel data
 const funnelData = computed(() => {
   if (!props.data?.length) return [];
 
-  const nameCol = props.name || Object.keys(props.data[0])[0];
-  const valueCol = props.value || Object.keys(props.data[0])[1];
-
   return props.data.map((row) => ({
-    name: String(row[nameCol]),
-    value: row[valueCol] as number
+    name: String(row[nameCol.value]),
+    value: row[valueCol.value] as number
   }));
 });
 
-// Calculate max value for percentage calculation
+// Calculate max value for ECharts series max
 const maxValue = computed(() => {
   if (!funnelData.value.length) return 0;
   return Math.max(...funnelData.value.map((d) => d.value));
+});
+
+// Base value for percentage calculation: first row = top of funnel
+// This matches Evidence's pattern: "what fraction of the initial audience remains"
+const baseValue = computed(() => {
+  if (!funnelData.value.length) return 1;
+  return funnelData.value[0]?.value ?? 1;
+});
+
+// Map user-facing labelPosition to ECharts-compatible position
+// ECharts funnel uses 'inner'/'outer' instead of 'inside'/'outside'
+const echartsLabelPosition = computed(() => {
+  const pos = props.labelPosition;
+  if (pos === 'outside') return 'outer' as const;
+  if (pos === 'inside') return 'inner' as const;
+  return pos as 'left' | 'right';
+});
+
+// Auto-generate series name from the value column name
+const seriesName = computed(() => {
+  const col = valueCol.value;
+  if (!col) return 'Funnel';
+  return formatTitle(col);
 });
 
 // Build chart config
@@ -72,9 +119,9 @@ const chartConfig = computed<EChartsOption>(() => {
       formatter: (params: unknown) => {
         const p = params as { name: string; value: number };
         let output = `<span style='font-weight: 600;'>${p.name}</span><br/>`;
-        output += `Value: <span style='float:right; margin-left: 10px;'>${formatValue(p.value, valueFormat.value)}</span>`;
-        if (props.showPercent && maxValue.value > 0) {
-          const percent = p.value / maxValue.value;
+        output += `<span>${seriesName.value}:</span><span style='float:right; margin-left: 10px;'>${formatValue(p.value, valueFormat.value)}</span>`;
+        if (props.showPercent && baseValue.value > 0) {
+          const percent = p.value / baseValue.value;
           output += `<br/>Percent: <span style='float:right; margin-left: 10px;'>${formatValue(percent, percentFormat.value)}</span>`;
         }
         return output;
@@ -88,30 +135,33 @@ const chartConfig = computed<EChartsOption>(() => {
     },
     series: [
       {
-        name: 'Funnel',
+        name: seriesName.value,
         type: 'funnel',
-        left: '10%',
+        left: props.funnelAlign === 'center' ? '10%' : '',
         top: chartTop,
         bottom: 20,
         width: '80%',
         min: 0,
         max: maxValue.value || 100,
-        minSize: '0%',
-        maxSize: '100%',
-        sort: 'descending',
+        minSize: '30%',
+        maxSize: '90%',
+        sort: props.funnelSort,
+        funnelAlign: props.funnelAlign,
         gap: 2,
         label: {
           show: true,
-          position: 'inside' as const,
+          position: echartsLabelPosition.value,
           formatter: (params: unknown) => {
             const p = params as { name: string; value: number };
-            if (props.showPercent && maxValue.value > 0) {
-              const percent = p.value / maxValue.value;
-              return `${p.name}\n${formatValue(percent, percentFormat.value)}`;
+            const formattedValue = formatValue(p.value, valueFormat.value);
+            if (props.showPercent && baseValue.value > 0) {
+              const percentOfInitial = ((p.value / baseValue.value) * 100).toFixed(1);
+              return `${formattedValue}\n${percentOfInitial}%`;
             }
-            return p.name;
+            return String(formattedValue);
           }
         },
+        labelLayout: { hideOverlap: true },
         labelLine: {
           length: 10,
           lineStyle: {
@@ -120,8 +170,8 @@ const chartConfig = computed<EChartsOption>(() => {
           }
         },
         itemStyle: {
-          borderColor: '#fff',
-          borderWidth: 1
+          borderColor: outlineColorResolved.value as string | undefined,
+          borderWidth: props.outlineWidth ?? 1
         },
         emphasis: {
           label: {

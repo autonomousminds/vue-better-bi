@@ -77,12 +77,8 @@ function columnConfigsEqual(a: TableColumnConfig, b: TableColumnConfig): boolean
   return true;
 }
 
-// Debug counters — remove after confirming the recursive update fix
-let _dbgReg = 0, _dbgUnreg = 0, _dbgUpd = 0;
-
 const tableContext: TableContext = reactive({
   registerColumn(config: TableColumnConfig) {
-    console.log(`[DataTable] registerColumn #${++_dbgReg}: ${config.id}`);
     const idx = registeredColumns.value.findIndex((c) => c.id === config.id);
     if (idx === -1) {
       registeredColumns.value.push(config);
@@ -91,11 +87,9 @@ const tableContext: TableContext = reactive({
     }
   },
   unregisterColumn(id: string) {
-    console.log(`[DataTable] unregisterColumn #${++_dbgUnreg}: ${id}`);
     registeredColumns.value = registeredColumns.value.filter((c) => c.id !== id);
   },
   updateColumn(config: TableColumnConfig) {
-    console.log(`[DataTable] updateColumn #${++_dbgUpd}: ${config.id} (changed: ${!columnConfigsEqual(registeredColumns.value.find(c => c.id === config.id) ?? {} as TableColumnConfig, config)})`);
     const idx = registeredColumns.value.findIndex((c) => c.id === config.id);
     if (idx !== -1) {
       if (!columnConfigsEqual(registeredColumns.value[idx], config)) {
@@ -343,12 +337,51 @@ const hovering = ref(false);
 
 // ─── Fullscreen ─────────────────────────────────────────────────────────
 const isFullscreen = ref(false);
+const isFullscreenClosing = ref(false);
 const fullscreenDialogRef = ref<HTMLDialogElement>();
+
+const FULLSCREEN_EXIT_DURATION = 250; // ms, matches CSS animation duration
+
+/** Compute optimal row count for fullscreen based on viewport height */
+const fullscreenRows = computed(() => {
+  if (typeof window === 'undefined') return 20;
+  const rowHeight = props.compact ? 32 : 40;
+  const headerHeight = 56;
+  const paginationHeight = 52;
+  const searchHeight = 52;
+  const margins = 60;
+  const available = window.innerHeight - headerHeight - paginationHeight - searchHeight - margins;
+  return Math.max(5, Math.floor(available / rowHeight));
+});
+
+// Fullscreen pagination
+const fullscreenPage = ref(1);
+const fullscreenIsPaginated = computed(() => sortedData.value.length > fullscreenRows.value);
+const fullscreenPageCount = computed(() =>
+  fullscreenIsPaginated.value ? Math.ceil(sortedData.value.length / fullscreenRows.value) : 1
+);
+const fullscreenDisplayedData = computed(() => {
+  if (!fullscreenIsPaginated.value) return sortedData.value;
+  const start = (fullscreenPage.value - 1) * fullscreenRows.value;
+  return sortedData.value.slice(start, start + fullscreenRows.value);
+});
+
+function goToFullscreenPage(page: number) {
+  fullscreenPage.value = Math.max(1, Math.min(page, fullscreenPageCount.value));
+}
+
+// Reset fullscreen page when data changes
+watch([sortedData, fullscreenRows], () => {
+  if (fullscreenPage.value > fullscreenPageCount.value) {
+    fullscreenPage.value = Math.max(1, fullscreenPageCount.value);
+  }
+});
 
 watch(isFullscreen, (open) => {
   const dialog = fullscreenDialogRef.value;
   if (!dialog) return;
   if (open) {
+    fullscreenPage.value = 1;
     dialog.showModal();
     document.body.style.overflow = 'hidden';
   } else {
@@ -358,7 +391,12 @@ watch(isFullscreen, (open) => {
 });
 
 function closeFullscreen() {
-  isFullscreen.value = false;
+  if (isFullscreenClosing.value) return;
+  isFullscreenClosing.value = true;
+  setTimeout(() => {
+    isFullscreen.value = false;
+    isFullscreenClosing.value = false;
+  }, FULLSCREEN_EXIT_DURATION);
 }
 
 function handleFullscreenDialogClick(e: MouseEvent) {
@@ -563,7 +601,7 @@ function handleFullscreenKeydown(e: KeyboardEvent) {
     <!-- Fullscreen dialog (always in DOM for ref stability) -->
     <dialog
       ref="fullscreenDialogRef"
-      :class="['fullscreen-dialog', isFullscreen ? 'slide-in' : 'slide-out']"
+      :class="['fullscreen-dialog', isFullscreenClosing ? 'slide-out' : isFullscreen ? 'slide-in' : '']"
       @click="handleFullscreenDialogClick"
       @keydown="handleFullscreenKeydown"
     >
@@ -596,7 +634,7 @@ function handleFullscreenKeydown(e: KeyboardEvent) {
             />
             <tbody>
               <TableRow
-                :displayed-data="sortedData"
+                :displayed-data="fullscreenDisplayedData"
                 :ordered-columns="orderedColumns"
                 :column-summary="columnSummary"
                 :row-shading="rowShading"
@@ -604,7 +642,7 @@ function handleFullscreenKeydown(e: KeyboardEvent) {
                 :row-numbers="rowNumbers"
                 :row-lines="rowLines"
                 :compact="compact"
-                :index="0"
+                :index="(fullscreenPage - 1) * fullscreenRows"
               />
               <TotalRow
                 v-if="totalRow"
@@ -619,6 +657,16 @@ function handleFullscreenKeydown(e: KeyboardEvent) {
               />
             </tbody>
           </table>
+        </div>
+        <!-- Fullscreen pagination -->
+        <div v-if="fullscreenIsPaginated && fullscreenPageCount > 1" class="fullscreen-pagination">
+          <Pagination
+            :current-page="fullscreenPage"
+            :page-count="fullscreenPageCount"
+            :total-rows="sortedData.length"
+            :displayed-count="fullscreenDisplayedData.length"
+            @go-to-page="goToFullscreenPage"
+          />
         </div>
       </div>
     </dialog>
@@ -724,8 +772,12 @@ table {
   animation: slideInFromBottom 0.3s ease-in-out;
 }
 
+.fullscreen-dialog.slide-out {
+  animation: slideOutToBottom 0.25s ease-in forwards;
+}
+
 .fullscreen-dialog.slide-out::backdrop {
-  all: unset;
+  animation: fadeOutBackdrop 0.25s ease-in forwards;
 }
 
 @keyframes slideInFromBottom {
@@ -739,6 +791,28 @@ table {
   100% {
     transform: translateY(0%);
     opacity: 1;
+  }
+}
+
+@keyframes slideOutToBottom {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+}
+
+@keyframes fadeOutBackdrop {
+  from {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(4px);
+  }
+  to {
+    background: rgba(255, 255, 255, 0);
+    backdrop-filter: blur(0px);
   }
 }
 
@@ -766,6 +840,10 @@ table {
   padding: 32px 24px 16px;
   overflow: auto;
   max-height: calc(90vh - 16px);
+}
+
+.fullscreen-pagination {
+  padding: 8px 0 0;
 }
 
 @media print {

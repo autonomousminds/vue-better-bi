@@ -1,7 +1,15 @@
 <script setup lang="ts">
 /**
  * ReferenceArea component
- * Adds a reference area/region to a chart
+ * Adds one or more reference areas/regions to a chart.
+ *
+ * Supports:
+ * - Static single area (xMin/xMax/yMin/yMax props)
+ * - Data-driven multiple areas (data prop)
+ * - Label position with 10 options (topLeft, top, topRight, etc.)
+ * - Smart default label position based on which bounds are set
+ * - Theme-token default colors
+ * - labelBackgroundColor, labelPadding, fontSize props
  */
 
 import { computed, inject, watch, onMounted, onUnmounted } from 'vue';
@@ -9,17 +17,38 @@ import type { ReferenceAreaProps } from '../../types';
 import { seriesConfigKey } from '../../symbols/injectionKeys';
 import { useThemeStores } from '../../composables/useTheme';
 
+// ---------------------------------------------------------------------------
+// Stable ID counter
+// ---------------------------------------------------------------------------
+let _idCounter = 0;
+const nextId = () => `refarea_${++_idCounter}`;
+
 const props = withDefaults(defineProps<ReferenceAreaProps>(), {
   opacity: 0.2,
   border: false,
   borderType: 'solid',
-  borderWidth: 1
+  borderWidth: 1,
+  labelPadding: 4,
+  fontSize: 12
 });
 
 const seriesConfig = inject(seriesConfigKey, undefined);
-const { resolveColor } = useThemeStores();
+const { resolveColor, theme } = useThemeStores();
 
+// ---------------------------------------------------------------------------
+// Stable series identity
+// ---------------------------------------------------------------------------
+const seriesId = nextId();
+const seriesName = `__reference_area_${seriesId}`;
+
+// ---------------------------------------------------------------------------
+// Theme-token default color
+// ---------------------------------------------------------------------------
+const defaultColor = computed(() => theme.value.colors['base-content-muted'] ?? '#999');
+
+// ---------------------------------------------------------------------------
 // Resolve colors
+// ---------------------------------------------------------------------------
 const colorResolved = computed(() =>
   props.color ? resolveColor(props.color).value : undefined
 );
@@ -29,84 +58,186 @@ const labelColorResolved = computed(() =>
 const borderColorResolved = computed(() =>
   props.borderColor ? resolveColor(props.borderColor).value : undefined
 );
+const labelBgResolved = computed(() =>
+  props.labelBackgroundColor ? resolveColor(props.labelBackgroundColor).value : undefined
+);
 
-// Map border type
-const borderTypeMap = {
+// ---------------------------------------------------------------------------
+// Border type mapping
+// ---------------------------------------------------------------------------
+const borderTypeMap: Record<string, string> = {
   solid: 'solid',
   dashed: 'dashed',
   dotted: 'dotted'
-} as const;
+};
 
-// Generate a unique series name
-const seriesName = computed(() => `reference_area_${Date.now()}`);
+// ---------------------------------------------------------------------------
+// Label position mapping (10 options)
+// ---------------------------------------------------------------------------
+const areaPositionMap: Record<string, string> = {
+  topLeft: 'insideTopLeft',
+  top: 'insideTop',
+  topRight: 'insideTopRight',
+  bottomLeft: 'insideBottomLeft',
+  bottom: 'insideBottom',
+  bottomRight: 'insideBottomRight',
+  left: 'insideLeft',
+  center: 'inside',
+  right: 'insideRight',
+  // Also accept ECharts-native values as pass-through
+  insideTopLeft: 'insideTopLeft',
+  insideTop: 'insideTop',
+  insideTopRight: 'insideTopRight',
+  insideBottomLeft: 'insideBottomLeft',
+  insideBottom: 'insideBottom',
+  insideBottomRight: 'insideBottomRight',
+  insideLeft: 'insideLeft',
+  inside: 'inside',
+  insideRight: 'insideRight'
+};
 
-// Build markArea config
-const markAreaConfig = computed(() => {
-  // Determine if horizontal (y-based) or vertical (x-based)
-  const hasYBounds = props.yMin !== undefined || props.yMax !== undefined;
-  const hasXBounds = props.xMin !== undefined || props.xMax !== undefined;
+// ---------------------------------------------------------------------------
+// Smart default label position based on which bounds are set
+// ---------------------------------------------------------------------------
+function getSmartDefaultPosition(
+  hasXBounds: boolean,
+  hasYBounds: boolean
+): string {
+  if (hasXBounds && hasYBounds) return 'insideTopLeft';
+  if (hasYBounds) return 'insideRight';
+  if (hasXBounds) return 'insideTop';
+  return 'insideTop';
+}
 
-  const areaConfig: [Record<string, unknown>, Record<string, unknown>] = [{}, {}];
+function resolveAreaPosition(
+  pos: string | undefined,
+  hasXBounds: boolean,
+  hasYBounds: boolean
+): string {
+  if (!pos) return getSmartDefaultPosition(hasXBounds, hasYBounds);
+  return areaPositionMap[pos] ?? pos;
+}
 
-  // Set up the area bounds
+// ---------------------------------------------------------------------------
+// Build a single markArea data entry from values
+// ---------------------------------------------------------------------------
+function buildAreaEntry(
+  xMin: string | number | undefined,
+  xMax: string | number | undefined,
+  yMin: number | undefined,
+  yMax: number | undefined,
+  label: string | undefined
+) {
+  const hasYBounds = yMin !== undefined || yMax !== undefined;
+  const hasXBounds = xMin !== undefined || xMax !== undefined;
+
+  const startCoord: Record<string, unknown> = {};
+  const endCoord: Record<string, unknown> = {};
+
   if (hasYBounds) {
-    areaConfig[0].yAxis = props.yMin ?? 'min';
-    areaConfig[1].yAxis = props.yMax ?? 'max';
+    startCoord.yAxis = yMin ?? 'min';
+    endCoord.yAxis = yMax ?? 'max';
   }
 
   if (hasXBounds) {
-    areaConfig[0].xAxis = props.xMin ?? 'min';
-    areaConfig[1].xAxis = props.xMax ?? 'max';
+    startCoord.xAxis = xMin ?? 'min';
+    endCoord.xAxis = xMax ?? 'max';
   }
+
+  if (label) {
+    startCoord.name = label;
+  }
+
+  return [startCoord, endCoord];
+}
+
+// ---------------------------------------------------------------------------
+// Build markArea config
+// ---------------------------------------------------------------------------
+const markAreaConfig = computed(() => {
+  const effectiveColor = (colorResolved.value || defaultColor.value) as string;
+
+  const hasYBounds = props.yMin !== undefined || props.yMax !== undefined;
+  const hasXBounds = props.xMin !== undefined || props.xMax !== undefined;
+
+  const dataEntries: unknown[] = [];
+
+  if (props.data && props.data.length > 0) {
+    // Data-driven: one area per row
+    for (const row of props.data) {
+      const entry = buildAreaEntry(
+        row.xMin ?? props.xMin,
+        row.xMax ?? props.xMax,
+        row.yMin ?? props.yMin,
+        row.yMax ?? props.yMax,
+        row.label ?? props.label
+      );
+      dataEntries.push(entry);
+    }
+  } else {
+    // Single static area
+    const entry = buildAreaEntry(props.xMin, props.xMax, props.yMin, props.yMax, props.label);
+    dataEntries.push(entry);
+  }
+
+  const labelConfig = props.label
+    ? {
+        show: true,
+        position: resolveAreaPosition(props.labelPosition, hasXBounds, hasYBounds),
+        color: labelColorResolved.value as string | undefined,
+        backgroundColor: labelBgResolved.value as string | undefined,
+        padding: props.labelPadding,
+        fontSize: props.fontSize
+      }
+    : undefined;
 
   return {
     silent: true,
     itemStyle: {
-      color: (colorResolved.value || 'rgba(100, 100, 100, 0.2)') as string,
+      color: effectiveColor,
       opacity: props.opacity,
-      borderColor: (props.border ? (borderColorResolved.value || colorResolved.value) : 'transparent') as string,
+      borderColor: (props.border
+        ? (borderColorResolved.value || effectiveColor)
+        : 'transparent') as string,
       borderWidth: props.border ? props.borderWidth : 0,
       borderType: borderTypeMap[props.borderType || 'solid']
     },
-    label: props.label ? {
-      show: true,
-      position: 'insideTop' as const,
-      color: labelColorResolved.value as string | undefined
-    } : undefined,
-    data: [[
-      { ...areaConfig[0], name: props.label || '' },
-      areaConfig[1]
-    ]] as [Record<string, unknown>, Record<string, unknown>][]
+    label: labelConfig,
+    data: dataEntries
   };
 });
 
+// ---------------------------------------------------------------------------
 // Build series config
+// ---------------------------------------------------------------------------
 const seriesConfig2 = computed(() => ({
-  name: seriesName.value,
+  name: seriesName,
   type: 'line' as const,
   data: [] as number[],
   markArea: markAreaConfig.value,
   seriesType: 'reference_area'
 }));
 
-// Register series on mount
+// ---------------------------------------------------------------------------
+// Lifecycle
+// ---------------------------------------------------------------------------
 onMounted(() => {
   if (seriesConfig) {
-    seriesConfig.addSeries(seriesConfig2.value);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- markArea data shape doesn't match ECharts strict types
+    seriesConfig.addSeries(seriesConfig2.value as any);
   }
 });
 
-// Update series when props change
 watch(seriesConfig2, (newConfig) => {
   if (seriesConfig) {
-    seriesConfig.updateSeries(seriesName.value, newConfig);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    seriesConfig.updateSeries(seriesName, newConfig as any);
   }
 });
 
-// Cleanup on unmount
 onUnmounted(() => {
   if (seriesConfig) {
-    seriesConfig.removeSeries(seriesName.value);
+    seriesConfig.removeSeries(seriesName);
   }
 });
 </script>

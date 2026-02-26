@@ -13,6 +13,7 @@ import { useChartConfig, getSeriesConfig } from '../../composables/useChartConfi
 import { useThemeStores } from '../../composables/useTheme';
 import { useInteractiveFeatures } from '../../composables/useInteractiveFeatures';
 import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
+import { getCompletedData } from '../../utils/getCompletedData';
 
 const props = withDefaults(defineProps<LineChartProps>(), {
   lineType: 'solid',
@@ -30,7 +31,8 @@ const props = withDefaults(defineProps<LineChartProps>(), {
   yAxisLabels: true,
   downloadableData: true,
   downloadableImage: true,
-  legendPosition: 'top'
+  legendPosition: 'top',
+  showAllLabels: false
 });
 
 const emit = defineEmits<{
@@ -49,7 +51,7 @@ const {
   brush: () => props.brush,
   animation: () => props.animation,
   tooltip: () => props.tooltip,
-  swapXY: () => false,
+  swapXY: () => props.swapXY ?? false,
   chartType: 'line'
 });
 
@@ -117,17 +119,22 @@ const lineSeriesConfig = computed<Partial<SeriesConfig>>(() => {
       type: lineTypeMap[props.lineType || 'solid']
     },
     itemStyle: {
-      color: lineColorResolved.value
+      color: lineColorResolved.value,
+      opacity: props.lineOpacity
     },
-    symbol: props.markers ? props.markerShape : 'none',
-    symbolSize: props.markers ? props.markerSize : 0,
+    // Symbol anchor: showSymbol must be true for labels to have anchor points.
+    // When labels=true but markers=false, use symbolSize:0 for invisible anchors.
+    showSymbol: props.labels || props.markers,
+    symbol: props.markers ? props.markerShape : 'circle',
+    symbolSize: props.markers ? props.markerSize : (props.labels ? 0 : undefined),
     label: props.labels ? {
       show: true,
-      position: props.labelPosition || 'top',
+      position: props.labelPosition || ((props.swapXY ?? false) ? 'right' : 'top'),
       fontSize: props.labelSize || 11,
       color: labelColorResolved.value,
+      padding: 3,
       formatter: (params: { value: unknown[]; seriesIndex: number }) => {
-        const value = params.value[1];
+        const value = (props.swapXY ?? false) ? params.value[0] : params.value[1];
         if (value === 0 || value == null) return '';
         const isY2 = seriesData.value[params.seriesIndex]?.yAxisIndex === 1;
         const labelFmt = isY2
@@ -139,9 +146,14 @@ const lineSeriesConfig = computed<Partial<SeriesConfig>>(() => {
         return formatValue(value, format, isY2 ? unitSummaries.value.y2 : unitSummaries.value.y);
       }
     } : undefined,
+    labelLayout: {
+      hideOverlap: props.showAllLabels ? false : true
+    },
     emphasis: {
       focus: 'series',
+      endLabel: { show: false },
       lineStyle: {
+        opacity: 1,
         width: (props.lineWidth || 2) + 1
       }
     }
@@ -154,18 +166,25 @@ const seriesData = computed(() => {
 
   let data = processedData.value;
 
-  // Handle missing values
+  // Data completion for multi-series charts:
+  // When using a series column or multiple y columns, ensure every series
+  // has a value for every x value to prevent visual artifacts.
+  const isMultiSeries = props.series || (Array.isArray(props.y) && props.y.length > 1);
+  if (isMultiSeries) {
+    try {
+      data = getCompletedData(data, props.x, props.y, props.series);
+    } catch (e) {
+      console.warn('LineChart: Failed to complete data', e);
+    }
+  }
+
+  // Handle missing values: replace nulls with zero
   if (props.handleMissing === 'zero') {
-    const yColumns = Array.isArray(props.y) ? props.y : [props.y];
-    data = data.map((row) => {
-      const newRow = { ...row };
-      for (const col of yColumns) {
-        if (newRow[col] == null) {
-          newRow[col] = 0;
-        }
-      }
-      return newRow;
-    });
+    try {
+      data = getCompletedData(data, props.x, props.y, props.series, { nullsZero: true });
+    } catch (e) {
+      console.warn('LineChart: Failed to complete data with zeros', e);
+    }
   }
 
   const allSeries = getSeriesConfig(
@@ -173,12 +192,13 @@ const seriesData = computed(() => {
     props.x,
     props.y,
     props.series,
-    false,
+    props.swapXY ?? false,
     lineSeriesConfig.value,
     columnSummary.value,
     {
       y2: props.y2,
-      seriesOrder: props.seriesOrder
+      seriesOrder: props.seriesOrder,
+      seriesLabelFmt: props.seriesLabelFmt
     }
   );
 
@@ -207,6 +227,19 @@ const chartConfig = computed<EChartsOption>(() => {
   // Update color palette
   if (colorPaletteResolved.value) {
     config.color = colorPaletteResolved.value;
+  }
+
+  // xAxis boundaryGap: prevent first/last points from sitting on the axis edge.
+  // Evidence sets ['2%', '2%'] for time axes and ['0%', '2%'] for others.
+  const xAxisConfig = config.xAxis as Record<string, unknown> | undefined;
+  if (xAxisConfig) {
+    xAxisConfig.boundaryGap = [_xAxisType.value === 'time' ? '2%' : '0%', '2%'];
+  }
+
+  // When labels are enabled, disable axisPointer emphasis to prevent
+  // labels from flashing/flickering on hover (matching Evidence behavior).
+  if (props.labels) {
+    config.axisPointer = { triggerEmphasis: false };
   }
 
   // Merge interactive features
@@ -267,6 +300,7 @@ const hovering = ref(false);
     :echarts-options="props.echartsOptions"
     :series-options="props.seriesOptions"
     :show-all-x-axis-labels="props.showAllXAxisLabels"
+    :swap-x-y="props.swapXY"
     :background-color="props.backgroundColor"
     @click="emit('click', $event)"
     @mouseenter="hovering = true"

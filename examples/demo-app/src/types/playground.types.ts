@@ -54,4 +54,6 @@ export interface ChartDefinition {
   supportsReferences: boolean;
   props: PropDefinition[];
   sampleDataKey: string;
+  /** Pre-configured column configs applied when the example is first loaded */
+  initialColumnConfigs?: Record<string, ColumnConfig>;
 }

@@ -124,6 +124,24 @@ const data = [
 | `ReferenceArea` | Shaded reference areas |
 | `ReferencePoint` | Labeled reference points |
 
+#### ReferenceLine Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `y` | `number` | - | Y-value for horizontal line |
+| `x` | `string` | - | X-value for vertical line |
+| `label` | `string` | - | Line label text |
+| `labelPosition` | `string` | - | Label position |
+| `color` | `string` | - | Line color (hex) |
+| `lineType` | `string` | `'dashed'` | Line style: `'solid'`, `'dashed'`, `'dotted'` |
+| `lineWidth` | `number` | `1` | Line width in pixels |
+| `hideValue` | `boolean` | `false` | Hide the value from the label |
+| `bold` | `boolean` | `false` | Bold label text |
+| `italic` | `boolean` | `false` | Italic label text |
+| `labelColor` | `string` | - | Label text color |
+| `labelBackgroundColor` | `string` | - | Label background color |
+| `fontSize` | `number` | - | Label font size |
+
 ## Formatting
 
 Use the `yFmt`, `xFmt`, or `valueFmt` props to format values:
@@ -250,6 +268,7 @@ configureThemes({
 | `xGridlines` | `boolean` | `false` | Show X-axis gridlines |
 | `yGridlines` | `boolean` | `true` | Show Y-axis gridlines |
 | `xTickMarks` | `boolean` | `false` | Show X-axis tick marks |
+| `xAxisLabelRotate` | `number` | `0` | Rotate X-axis labels by degrees (0-90). Useful for long category names |
 | `yTickMarks` | `boolean` | `false` | Show Y-axis tick marks |
 
 ```vue
@@ -262,6 +281,7 @@ configureThemes({
   xAxisTitle="Month"
   yAxisTitle="Sales ($)"
   :yGridlines="true"
+  :xAxisLabelRotate="45"
 />
 ```
 
@@ -345,6 +365,147 @@ When a secondary axis is present, both axes automatically color their labels and
 | `downloadableData` | `boolean` | Enable CSV download (default: true) |
 | `downloadableImage` | `boolean` | Enable image download (default: true) |
 
+### BarChart Props
+
+In addition to common props, axis props, and formatting props:
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `type` | `'stacked' \| 'grouped' \| 'stacked100'` | `'grouped'` | Bar stacking mode |
+| `labels` | `boolean` | `false` | Show data labels on bars |
+| `stackTotalLabel` | `boolean` | `false` | Show a total value label above each stacked bar. Only works with `type='stacked'` or `type='stacked100'`. When enabled, legend toggling is disabled to keep totals accurate |
+| `seriesLabels` | `boolean` | `true` (when `labels=true`) | Show value labels on individual bar segments. Set to `false` to show only `stackTotalLabel` totals |
+
+```vue
+<!-- Stacked bars with total labels only (no per-segment labels) -->
+<BarChart
+  :data="data"
+  x="month"
+  y="revenue"
+  series="region"
+  type="stacked"
+  :labels="true"
+  :stackTotalLabel="true"
+  :seriesLabels="false"
+  yFmt="usd0k"
+/>
+```
+
+### FunnelChart Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `data` | `Array` | required | Data array |
+| `name` | `string` | first column | Column for stage names |
+| `value` | `string` | second column | Column for stage values |
+| `showPercent` | `boolean` | `true` | Show percentage labels on stages |
+| `labels` | `boolean` | `true` | Show data labels |
+| `valueFmt` | `string` | - | Format string for values |
+| `percentFmt` | `string` | - | Format string for percentages |
+| `funnelSort` | `'descending' \| 'ascending' \| 'none'` | `'descending'` | Sort order of funnel stages. `'descending'`: largest at top. `'ascending'`: smallest at top. `'none'`: preserve data order |
+| `funnelAlign` | `'center' \| 'left' \| 'right'` | `'center'` | Horizontal alignment of funnel trapezoids |
+
+```vue
+<FunnelChart
+  :data="data"
+  name="stage"
+  value="count"
+  :showPercent="true"
+  funnelAlign="left"
+  valueFmt="num0"
+/>
+```
+
+### SankeyDiagram Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `data` | `Array` | required | Data array with source/target/value rows |
+| `source` | `string` | `'source'` | Column for source nodes (defaults to `'source'` if column exists) |
+| `target` | `string` | `'target'` | Column for target nodes (defaults to `'target'` if column exists) |
+| `value` | `string` | `'value'` | Column for flow values (defaults to `'value'` if column exists) |
+| `orient` | `'horizontal' \| 'vertical'` | `'horizontal'` | Diagram orientation |
+| `nodeAlign` | `'justify' \| 'left' \| 'right'` | `'justify'` | Node alignment |
+| `nodeWidth` | `number` | - | Width of nodes in pixels |
+| `nodeGap` | `number` | - | Gap between nodes in pixels |
+| `nodeLabels` | `'name' \| 'value' \| 'full' \| 'none'` | `'name'` | Node label display mode. `'name'`: node name. `'value'`: numeric value. `'full'`: `'Name (value)'`. `'none'`: hide |
+| `linkLabels` | `'value' \| 'percent' \| 'full' \| 'none'` | `'none'` | Link label display. `'value'`: flow value. `'percent'`: percentage of total. `'full'`: `'value (percent)'`. `'none'`: hide |
+| `linkColor` | `string` | `'gradient'` | Link color mode: `'source'`, `'target'`, `'gradient'`, or a hex color |
+| `valueFmt` | `string` | - | Format string for values |
+
+```vue
+<SankeyDiagram
+  :data="flowData"
+  source="from"
+  target="to"
+  value="amount"
+  nodeLabels="full"
+  linkLabels="percent"
+  linkColor="gradient"
+  valueFmt="num0"
+/>
+```
+
+### BoxPlot Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `data` | `Array` | required | Data array |
+| `x` | `string` | required | Column for group labels |
+| `y` | `string \| string[]` | required | Y-axis column(s) |
+| `midpoint` | `string` | - | Column for median/midpoint |
+| `confidenceIntervalLower` | `string` | - | Column for Q1/lower quartile |
+| `confidenceIntervalUpper` | `string` | - | Column for Q3/upper quartile |
+| `min` | `string` | - | Column for whisker minimum. If omitted, computed as Q1 - 1.5*IQR |
+| `max` | `string` | - | Column for whisker maximum. If omitted, computed as Q3 + 1.5*IQR |
+
+```vue
+<!-- Whiskers auto-computed from IQR -->
+<BoxPlot
+  :data="data"
+  x="group"
+  midpoint="median"
+  confidenceIntervalLower="q1"
+  confidenceIntervalUpper="q3"
+/>
+
+<!-- Explicit whisker columns -->
+<BoxPlot
+  :data="data"
+  x="group"
+  midpoint="median"
+  confidenceIntervalLower="q1"
+  confidenceIntervalUpper="q3"
+  min="whisker_low"
+  max="whisker_high"
+/>
+```
+
+### CalendarHeatmap Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `data` | `Array` | required | Data array |
+| `date` | `string` | required | Column for dates |
+| `value` | `string` | required | Column for values |
+| `min` | `number` | auto | Minimum value for color scale |
+| `max` | `number` | auto | Maximum value for color scale |
+| `valueFmt` | `string` | - | Format string for values |
+| `yearLabel` | `boolean` | `true` | Show year labels |
+| `monthLabel` | `boolean` | `true` | Show month labels |
+| `dayLabel` | `boolean` | `true` | Show day-of-week labels |
+
+```vue
+<CalendarHeatmap
+  :data="data"
+  date="date"
+  value="contributions"
+  :min="0"
+  :max="20"
+  :dayLabel="false"
+/>
+```
+
 ### Heatmap Props
 
 | Prop | Type | Default | Description |
@@ -356,9 +517,12 @@ When a secondary axis is present, both axes automatically color their labels and
 | `mobileValueLabels` | `boolean` | `false` | Show values on mobile (< 400px width) |
 | `zeroDisplay` | `string` | `'—'` | What to display for zero values |
 | `colorScale` | `string \| string[]` | `'default'` | Color scale for the heatmap |
-| `nullsZero` | `boolean` | `false` | Treat null values as zero |
+| `nullsZero` | `boolean` | `true` | Treat null values as zero |
 | `min` | `number` | auto | Override minimum value for color scale |
 | `max` | `number` | auto | Override maximum value for color scale |
+| `cellHeight` | `number` | `30` | Height in pixels per row. Chart auto-sizes vertically to fit all rows |
+| `borders` | `boolean` | `true` | Show borders around heatmap cells |
+| `xAxisPosition` | `'top' \| 'bottom'` | `'top'` | Position of the x-axis labels |
 
 ```vue
 <Heatmap
@@ -770,6 +934,8 @@ This renders:
 | `link` | `string` | - | URL to make the value clickable |
 | `minWidth` | `string` | `'18%'` | CSS min-width |
 | `maxWidth` | `string` | `'none'` | CSS max-width |
+| `redNegatives` | `boolean` | `false` | Show negative values in red. Useful for financial metrics where negative = bad |
+| `valueColor` | `string` | - | Custom color for the main value text |
 
 #### Comparison Props
 

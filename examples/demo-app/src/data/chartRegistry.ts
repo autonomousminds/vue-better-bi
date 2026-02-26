@@ -8,8 +8,8 @@ import {
   pointMapProps, bubbleMapProps,
   dataTableProps,
   bigValueProps,
-  costCountBarChartProps,
-  usageAreaChartProps,
+  dualAxisBarChartProps,
+  productCategoryTableProps,
 } from './propDefinitions';
 
 export const chartRegistry: ChartDefinition[] = [
@@ -21,6 +21,15 @@ export const chartRegistry: ChartDefinition[] = [
     supportsReferences: true,
     props: barChartProps,
     sampleDataKey: 'sales',
+  },
+  {
+    id: 'dual-axis-bar-chart', name: 'Dual Axis Bar Chart', componentName: 'BarChart',
+    category: 'Standard Charts',
+    description: 'Bar chart with secondary Y-axis for revenue and profit margin comparison',
+    dataBindings: { x: 'brand_name', y: ['total_sales'] },
+    supportsReferences: true,
+    props: dualAxisBarChartProps,
+    sampleDataKey: 'brandProfitability',
   },
   {
     id: 'line-chart', name: 'Line Chart', componentName: 'LineChart',
@@ -52,8 +61,8 @@ export const chartRegistry: ChartDefinition[] = [
   {
     id: 'bubble-chart', name: 'Bubble Chart', componentName: 'BubbleChart',
     category: 'Standard Charts',
-    description: 'Scatter with size dimension for three-variable visualization',
-    dataBindings: { x: 'age', y: 'income', size: 'spending' },
+    description: 'Customer segments plotted by count and average income',
+    dataBindings: { x: 'occupation', y: ['avg_income'], size: 'customer_count' },
     supportsReferences: true,
     props: bubbleChartProps,
     sampleDataKey: 'bubble',
@@ -167,25 +176,28 @@ export const chartRegistry: ChartDefinition[] = [
     sampleDataKey: 'table',
   },
   {
-    id: 'cost-count-bar', name: 'Cost & Count by Type', componentName: 'BarChart',
-    category: 'Standard Charts',
-    description: 'Horizontal bar chart with cost by interaction type and count on secondary axis',
-    dataBindings: { x: 'usage_type', y: 'total_cost' },
-    supportsReferences: true,
-    props: costCountBarChartProps,
-    sampleDataKey: 'costCount',
-  },
-  {
-    id: 'usage-area', name: 'Usage Requests', componentName: 'AreaChart',
-    category: 'Standard Charts',
-    description: 'Stacked area chart showing daily requests by usage type over time',
-    dataBindings: {
-      x: 'date', y: ['requests'], series: 'usage_type',
-      colorPalette: ['#236aa4', '#45a1bf', '#a5cdee', '#8dacbf', '#85c7c6'],
+    id: 'product-category-table', name: 'Product Category Table', componentName: 'DataTable',
+    category: 'Tables',
+    description: 'Revenue by product category with bar visualization and totals',
+    dataBindings: {},
+    supportsReferences: false,
+    props: productCategoryTableProps,
+    sampleDataKey: 'productCategory',
+    initialColumnConfigs: {
+      category: {
+        enabled: true,
+        title: 'Product Category',
+        align: 'left',
+      },
+      revenue: {
+        enabled: true,
+        title: 'Revenue',
+        align: 'right',
+        fmt: 'usd0',
+        contentType: 'bar',
+        totalAgg: 'sum',
+      },
     },
-    supportsReferences: true,
-    props: usageAreaChartProps,
-    sampleDataKey: 'usageRequests',
   },
   {
     id: 'big-value', name: 'Big Value', componentName: 'BigValue',

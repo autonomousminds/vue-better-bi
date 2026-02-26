@@ -14,7 +14,7 @@ import type {
   ColumnSummary,
   LegendPosition
 } from '../types';
-import { formatAxisValue, formatTitle, getFormatObjectFromString, lookupColumnFormat } from '../utils/formatting';
+import { formatAxisValue, formatTitle, getFormatObjectFromString, lookupColumnFormat, fmt } from '../utils/formatting';
 import { standardizeDateColumn } from '../utils/dateParsing';
 import { createTooltipConfig } from './useTooltip';
 
@@ -473,13 +473,14 @@ export function useChartConfig(
           axisLabel: {
             show: props.xAxisLabels !== false,
             hideOverlap: true,
+            rotate: props.xAxisLabelRotate || undefined,
             formatter: xAxisType.value === 'time' || xAxisType.value === 'category'
               ? undefined
               : (value: number) => formatAxisValue(value, formats.value.x, unitSummaries.value.x)
           },
           name: xAxisTitle,
           nameLocation: 'middle' as const,
-          nameGap: 30
+          nameGap: props.xAxisLabelRotate ? 30 + Math.abs(props.xAxisLabelRotate) * 0.5 : 30
         };
 
     const hasY2 = !swapXY && y2Count.value > 0;
@@ -638,6 +639,7 @@ export function getSeriesConfig(
     tooltipTitle,
     y2,
     seriesOrder,
+    seriesLabelFmt,
     fillMissingData = false
   } = options;
 
@@ -776,6 +778,15 @@ export function getSeriesConfig(
   // Apply series order
   if (seriesOrder) {
     seriesConfigs.sort((a, b) => seriesOrder.indexOf(a.name) - seriesOrder.indexOf(b.name));
+  }
+
+  // Format series names (legend labels) using seriesLabelFmt
+  if (seriesLabelFmt) {
+    seriesConfigs.forEach((series) => {
+      if (series.name) {
+        series.name = fmt(series.name, seriesLabelFmt);
+      }
+    });
   }
 
   return seriesConfigs;

@@ -60,6 +60,8 @@ export interface CircleMarkerOptions {
   opacity: number;
   tooltipContent?: string;
   tooltipType?: 'hover' | 'click';
+  /** Click handler for the marker */
+  onClick?: (marker: import('leaflet').CircleMarker) => void;
 }
 
 export function useLeafletMap() {
@@ -133,6 +135,11 @@ export function useLeafletMap() {
       }
     }
 
+    if (opts.onClick) {
+      const handler = opts.onClick;
+      marker.on('click', () => handler(marker));
+    }
+
     markers.push(marker);
     return marker;
   }
@@ -165,6 +172,13 @@ export function useLeafletMap() {
     }
   }
 
+  function updateMarkerStyle(
+    marker: import('leaflet').CircleMarker,
+    style: Partial<import('leaflet').CircleMarkerOptions>
+  ): void {
+    marker.setStyle(style);
+  }
+
   function getMap() {
     return map;
   }
@@ -177,6 +191,7 @@ export function useLeafletMap() {
     addCircleMarker,
     clearMarkers,
     fitBoundsToMarkers,
+    updateMarkerStyle,
     cleanup,
     getMap
   };

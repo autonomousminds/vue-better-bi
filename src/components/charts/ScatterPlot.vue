@@ -43,7 +43,7 @@ const {
   brush: () => props.brush,
   animation: () => props.animation,
   tooltip: () => props.tooltip,
-  swapXY: () => false,
+  swapXY: () => props.swapXY ?? false,
   chartType: 'scatter'
 });
 
@@ -89,6 +89,10 @@ const scatterSeriesConfig = computed<Partial<SeriesConfig>>(() => {
     type: 'scatter',
     symbol: props.pointShape,
     symbolSize: props.pointSize,
+    label: {
+      show: false
+    },
+    labelLayout: { hideOverlap: true },
     itemStyle: {
       color: pointColorResolved.value,
       opacity: props.pointOpacity,
@@ -96,7 +100,7 @@ const scatterSeriesConfig = computed<Partial<SeriesConfig>>(() => {
       borderWidth: props.outlineWidth
     },
     emphasis: {
-      focus: 'series',
+      focus: 'item',
       itemStyle: {
         borderWidth: (props.outlineWidth || 1) + 1
       }
@@ -113,11 +117,12 @@ const seriesData = computed(() => {
     props.x,
     props.y,
     props.series,
-    false,
+    props.swapXY ?? false,
     scatterSeriesConfig.value,
     columnSummary.value,
     {
-      tooltipTitle: props.tooltipTitle
+      tooltipTitle: props.tooltipTitle,
+      seriesLabelFmt: props.seriesLabelFmt
     }
   );
 });
@@ -153,6 +158,31 @@ const chartConfig = computed<EChartsOption>(() => {
   if (!props.xType) {
     (config.xAxis as Record<string, unknown>).type = 'value';
   }
+
+  // Scatter-specific axis overrides (matches Evidence Scatter.svelte)
+  // yAxis: scale:true prevents ECharts from forcing the axis to include zero,
+  // which would squash data that lives far from zero (e.g., 900-1000 on a 0-1000 axis).
+  // boundaryGap adds padding so edge points aren't clipped against axis lines.
+  const yAxis = config.yAxis;
+  if (Array.isArray(yAxis)) {
+    // Dual-axis: override the primary axis
+    config.yAxis = yAxis.map((axis, i) => {
+      if (i === 0) {
+        return { ...axis, scale: true, boundaryGap: ['1%', '1%'] };
+      }
+      return axis;
+    });
+  } else if (yAxis && typeof yAxis === 'object') {
+    config.yAxis = { ...yAxis, scale: true, boundaryGap: ['1%', '1%'] };
+  }
+
+  // xAxis: add scatter-specific boundaryGap so edge points have visible padding
+  const resolvedXType = _xAxisType.value;
+  const xAxis = config.xAxis as Record<string, unknown>;
+  config.xAxis = {
+    ...xAxis,
+    boundaryGap: [resolvedXType === 'time' ? '2%' : '1%', '2%']
+  };
 
   // Merge interactive features
   const interactive = interactiveConfig.value;
@@ -218,6 +248,7 @@ const hovering = ref(false);
     :series-colors="seriesColorsResolved as Record<string, string>"
     :echarts-options="props.echartsOptions"
     :series-options="props.seriesOptions"
+    :swap-x-y="props.swapXY"
     :background-color="props.backgroundColor"
     @click="emit('click', $event)"
     @mouseenter="hovering = true"

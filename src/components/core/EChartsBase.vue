@@ -4,7 +4,7 @@
  * Handles chart initialization, resize, and theme switching
  */
 
-import { ref, watch, onMounted, onUnmounted, shallowRef } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, shallowRef } from 'vue';
 import type { EChartsOption, ECharts } from 'echarts';
 import * as echarts from 'echarts';
 import debounce from 'debounce';
@@ -37,12 +37,17 @@ interface Props {
   xAxisLabelOverflow?: 'break' | 'truncate';
   backgroundColor?: string;
   data?: Record<string, unknown>[];
+  error?: string | null;
+  emptySet?: 'pass' | 'warn' | 'error';
+  emptyMessage?: string;
+  printEchartsConfig?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   height: '291px',
   width: '100%',
-  renderer: 'canvas'
+  renderer: 'canvas',
+  printEchartsConfig: false
 });
 
 const emit = defineEmits<{
@@ -56,6 +61,19 @@ const chartInstance = shallowRef<ECharts | null>(null);
 const hovering = ref(false);
 const isFirstRender = ref(true);
 
+// Formatted ECharts config for debug display
+const formattedConfig = computed(() => {
+  try {
+    return JSON.stringify(props.config, (_key, value) => {
+      if (typeof value === 'function') {
+        return `[Function: ${value.name || 'anonymous'}]`;
+      }
+      return value;
+    }, 2);
+  } catch {
+    return '// Unable to serialize config';
+  }
+});
 
 // Check if we should use SVG (iOS large canvas workaround)
 function shouldUseSvg(container: HTMLElement): boolean {
@@ -168,6 +186,20 @@ function updateLabelWidths(): void {
   const prevOption = chartInstance.value.getOption() as EChartsOption;
   if (!prevOption || !prevOption.series) return;
 
+  // If labels are rotated, just show all labels without width-based truncation
+  const xAxisArr = prevOption.xAxis as Array<{ axisLabel?: { rotate?: number } }> | undefined;
+  const currentRotate = xAxisArr?.[0]?.axisLabel?.rotate;
+  if (currentRotate) {
+    chartInstance.value.setOption({
+      xAxis: {
+        axisLabel: {
+          interval: 0
+        }
+      }
+    });
+    return;
+  }
+
   const series = prevOption.series as Array<{ data?: Array<[unknown, unknown]> }>;
   const distinctXValues = new Set(
     series.flatMap((s) => s.data?.map((d) => d[0]) || [])
@@ -261,6 +293,9 @@ defineExpose({
     :subtitle="props.subtitle"
     :backgroundColor="props.backgroundColor"
     :data="props.data"
+    :error="props.error"
+    :empty-set="props.emptySet"
+    :empty-message="props.emptyMessage"
     @mouseenter="hovering = true"
     @mouseleave="hovering = false"
   >
@@ -273,6 +308,7 @@ defineExpose({
       }"
     />
     <slot name="footer" :hovering="hovering" />
+    <pre v-if="printEchartsConfig" class="echarts-config-debug">{{ formattedConfig }}</pre>
   </ChartContainer>
 </template>
 
@@ -289,5 +325,20 @@ defineExpose({
     break-inside: avoid;
     -moz-column-break-inside: avoid;
   }
+}
+
+.echarts-config-debug {
+  font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  font-size: 0.8em;
+  line-height: 1.5;
+  background-color: #f8f9fa;
+  border: 1px solid #e2e4e8;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-top: 8px;
+  max-height: 400px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 </style>

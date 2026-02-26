@@ -3,11 +3,12 @@ import { computed, ref, watch, onMounted, nextTick } from 'vue';
 import type { BigValueProps } from '../../types';
 import { formatValue, getFormatObjectFromString, formatTitle } from '../../utils/formatting';
 import { aggregateColumn } from '../../utils/tableUtils';
+import { checkInputs } from '../../utils/checkInputs';
 import { useThemeStores } from '../../composables/useTheme';
 import BigValueSparkline from './BigValueSparkline.vue';
 import DeltaCell from '../table/DeltaCell.vue';
 
-const { theme } = useThemeStores();
+const { theme, resolveColor } = useThemeStores();
 const titleColor = computed(() => theme.value.colors['base-heading']);
 const subtitleColor = computed(() => theme.value.colors['base-content-muted']);
 
@@ -21,8 +22,23 @@ const props = withDefaults(defineProps<BigValueProps>(), {
   neutralMax: 0,
   maxWidth: '100%',
   minWidth: '18%',
+  redNegatives: false,
+  emptySet: 'warn',
 });
 
+// --- Input validation ---
+const validation = computed(() => {
+  const optionalCols = [props.comparison, props.sparkline].filter(
+    (c): c is string => c != null && c !== ''
+  );
+  return checkInputs(props.data, [props.value], optionalCols.length > 0 ? optionalCols : undefined);
+});
+
+const hasData = computed(() => {
+  return validation.value.valid && normalizedData.value.length > 0;
+});
+
+// --- Display mode toggle ---
 const displayMode = ref<'percent' | 'absolute'>(props.comparisonDisplay);
 
 watch(() => props.comparisonDisplay, (val) => {
@@ -33,11 +49,13 @@ const toggleDisplayMode = () => {
   displayMode.value = displayMode.value === 'percent' ? 'absolute' : 'percent';
 };
 
+// --- Data normalization ---
 const normalizedData = computed(() => {
   if (!props.data) return [];
   return Array.isArray(props.data) ? props.data : [props.data];
 });
 
+// --- Format objects ---
 const valueFormatObject = computed(() => {
   if (props.fmt) return getFormatObjectFromString(props.fmt);
   return undefined;
@@ -48,6 +66,7 @@ const comparisonFormatObject = computed(() => {
   return undefined;
 });
 
+// --- Main value ---
 const mainRawValue = computed(() => {
   const data = normalizedData.value;
   if (!data.length || !props.value) return null;
@@ -64,6 +83,27 @@ const displayValue = computed(() => {
   return formatValue(mainRawValue.value, valueFormatObject.value);
 });
 
+// --- Resolved value color ---
+const resolvedValueColor = computed(() => {
+  if (props.valueColor) {
+    return resolveColor(props.valueColor).value;
+  }
+  return undefined;
+});
+
+// --- Value style (combines valueColor and redNegatives) ---
+const valueStyle = computed(() => {
+  // redNegatives takes priority if value is negative
+  if (props.redNegatives && mainRawValue.value !== null && mainRawValue.value < 0) {
+    return { color: '#dc2626' }; // red-600
+  }
+  if (resolvedValueColor.value) {
+    return { color: resolvedValueColor.value as string };
+  }
+  return {};
+});
+
+// --- Titles ---
 const resolvedTitle = computed(() => {
   if (props.title) return props.title;
   if (props.value) return formatTitle(props.value);
@@ -76,6 +116,7 @@ const resolvedComparisonTitle = computed(() => {
   return '';
 });
 
+// --- Comparison value ---
 const comparisonRawValue = computed(() => {
   const data = normalizedData.value;
   if (!data.length || !props.comparison) return null;
@@ -110,14 +151,21 @@ const deltaFormatObject = computed(() => {
 
 const comparisonDisplayValue = computed(() => {
   if (comparisonRawValue.value === null) return '-';
-  return formatValue(comparisonRawValue.value, comparisonFormatObject.value);
+  return formatValue(comparisonRawValue.value, comparisonFormatObject.value ?? valueFormatObject.value);
 });
 
+// --- Sparkline ---
 const sparklineEffectiveValueFmt = computed(() => props.fmt ?? props.sparklineValueFmt);
 
 const hasSparkline = computed(() => !!props.sparkline && normalizedData.value.length > 0);
 const hasComparison = computed(() => !!props.comparison && normalizedData.value.length > 0);
 
+// --- Empty state message ---
+const emptyStateMessage = computed(() => {
+  return props.emptyMessage ?? 'No data found';
+});
+
+// --- Truncation tooltip logic ---
 const titleRef = ref<HTMLElement>();
 const subtitleRef = ref<HTMLElement>();
 const isTitleTruncated = ref(false);
@@ -175,7 +223,14 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
     class="big-value"
     :style="{ minWidth: minWidth, maxWidth: maxWidth }"
   >
-    <template v-if="!data || data.length === 0">
+    <!-- Validation error state -->
+    <div v-if="!validation.valid" class="bigvalue-error">
+      <span class="bigvalue-error-icon">!</span>
+      <span>{{ validation.error }}</span>
+    </div>
+
+    <!-- Empty data state -->
+    <template v-else-if="!hasData">
       <img
         v-if="titleIcon"
         :src="titleIcon"
@@ -184,102 +239,124 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
       />
       <p v-if="resolvedTitle" class="big-value-title" :style="{ color: titleColor }">{{ resolvedTitle }}</p>
       <p v-if="subtitle" class="big-value-subtitle" :style="{ color: subtitleColor }">{{ subtitle }}</p>
-      <div class="empty-state empty-info">No data found</div>
+      <div v-if="emptySet !== 'pass'" :class="['empty-state', emptySet === 'error' ? 'empty-error' : 'empty-info']">
+        {{ emptyStateMessage }}
+      </div>
     </template>
-    <template v-else>
-    <img
-      v-if="titleIcon"
-      :src="titleIcon"
-      class="big-value-title-icon"
-      alt=""
-    />
-    <p
-      v-if="resolvedTitle"
-      ref="titleRef"
-      class="big-value-title"
-      :class="[titleClass, { 'is-truncated': isTitleTruncated }]"
-      :style="{ color: titleColor }"
-      @mouseenter="onTitleEnter"
-      @mouseleave="titleHover = false"
-    >
-      {{ resolvedTitle }}
-    </p>
-    <p
-      v-if="subtitle"
-      ref="subtitleRef"
-      class="big-value-subtitle"
-      :class="{ 'is-truncated': isSubtitleTruncated }"
-      :style="{ color: subtitleColor }"
-      @mouseenter="onSubtitleEnter"
-      @mouseleave="subtitleHover = false"
-    >
-      {{ subtitle }}
-    </p>
 
-    <Teleport to="body">
-      <div
-        v-if="titleHover && isTitleTruncated"
-        class="big-value-tooltip"
-        :style="tooltipStyle"
+    <!-- Normal display -->
+    <template v-else>
+      <img
+        v-if="titleIcon"
+        :src="titleIcon"
+        class="big-value-title-icon"
+        alt=""
+      />
+      <p
+        v-if="resolvedTitle"
+        ref="titleRef"
+        class="big-value-title"
+        :class="[titleClass, { 'is-truncated': isTitleTruncated }]"
+        :style="{ color: titleColor }"
+        @mouseenter="onTitleEnter"
+        @mouseleave="titleHover = false"
       >
         {{ resolvedTitle }}
-      </div>
-      <div
-        v-if="subtitleHover && isSubtitleTruncated"
-        class="big-value-tooltip big-value-tooltip--sub"
-        :style="tooltipStyle"
+        <span v-if="description" class="info-tooltip" :title="description">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="info-icon"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
+        </span>
+      </p>
+      <p
+        v-if="subtitle"
+        ref="subtitleRef"
+        class="big-value-subtitle"
+        :class="{ 'is-truncated': isSubtitleTruncated }"
+        :style="{ color: subtitleColor }"
+        @mouseenter="onSubtitleEnter"
+        @mouseleave="subtitleHover = false"
       >
         {{ subtitle }}
-      </div>
-    </Teleport>
+      </p>
 
-    <div :class="['big-value-main', valueClass]">
-      <a v-if="link" :href="link" class="big-value-link">
-        {{ displayValue }}
-      </a>
-      <span v-else>{{ displayValue }}</span>
+      <Teleport to="body">
+        <div
+          v-if="titleHover && isTitleTruncated"
+          class="big-value-tooltip"
+          :style="tooltipStyle"
+        >
+          {{ resolvedTitle }}
+        </div>
+        <div
+          v-if="subtitleHover && isSubtitleTruncated"
+          class="big-value-tooltip big-value-tooltip--sub"
+          :style="tooltipStyle"
+        >
+          {{ subtitle }}
+        </div>
+      </Teleport>
 
-      <BigValueSparkline
-        v-if="hasSparkline"
-        :data="normalizedData"
-        :dateCol="sparkline!"
-        :valueCol="sparklineY ?? value"
-        :type="sparklineType"
-        :color="sparklineColor"
-        :yScale="sparklineYScale"
-        :valueFmt="sparklineEffectiveValueFmt"
-        :dateFmt="sparklineDateFmt"
-        :connectGroup="connectGroup"
-        :width="120"
-        :height="32"
-      />
-    </div>
-
-    <div
-      v-if="hasComparison"
-      :class="['big-value-comparison', comparisonClass, { 'big-value-comparison--clickable': comparisonDelta }]"
-      @click="comparisonDelta ? toggleDisplayMode() : undefined"
-    >
-      <template v-if="comparisonDelta && deltaDisplayValue !== null">
-        <DeltaCell
-          :value="deltaDisplayValue"
-          :downIsGood="downIsGood"
-          :neutralMin="neutralMin"
-          :neutralMax="neutralMax"
-          :formatObject="deltaFormatObject"
-          symbolPosition="left"
-          :text="resolvedComparisonTitle"
-        />
-        <span class="big-value-mode-hint">{{ displayMode === 'percent' ? '%' : '#' }}</span>
-      </template>
-      <template v-else-if="!comparisonDelta">
-        <a v-if="link" :href="link" class="big-value-link">
-          {{ comparisonDisplayValue }}
+      <div :class="['big-value-main', valueClass]">
+        <a v-if="link" :href="link" class="big-value-link" :style="valueStyle">
+          {{ displayValue }}
         </a>
-        <span v-else>{{ comparisonDisplayValue }}</span>
-        <span class="big-value-comparison-label">{{ resolvedComparisonTitle }}</span>
-      </template>
-    </div>
+        <span v-else :style="valueStyle">{{ displayValue }}</span>
+
+        <BigValueSparkline
+          v-if="hasSparkline"
+          :data="normalizedData"
+          :dateCol="sparkline!"
+          :valueCol="sparklineY ?? value"
+          :type="sparklineType"
+          :color="sparklineColor"
+          :yScale="sparklineYScale"
+          :valueFmt="sparklineEffectiveValueFmt"
+          :dateFmt="sparklineDateFmt"
+          :connectGroup="connectGroup"
+          :width="120"
+          :height="32"
+        />
+      </div>
+
+      <div
+        v-if="hasComparison"
+        :class="['big-value-comparison', comparisonClass, { 'big-value-comparison--clickable': comparisonDelta }]"
+        @click="comparisonDelta ? toggleDisplayMode() : undefined"
+      >
+        <template v-if="comparisonDelta && deltaDisplayValue !== null">
+          <DeltaCell
+            :value="deltaDisplayValue"
+            :downIsGood="downIsGood"
+            :neutralMin="neutralMin"
+            :neutralMax="neutralMax"
+            :formatObject="deltaFormatObject"
+            symbolPosition="left"
+            :text="resolvedComparisonTitle"
+          />
+          <span class="big-value-mode-hint">{{ displayMode === 'percent' ? '%' : '#' }}</span>
+        </template>
+        <template v-else-if="!comparisonDelta">
+          <a v-if="link" :href="link" class="big-value-link">
+            {{ comparisonDisplayValue }}
+          </a>
+          <span v-else>{{ comparisonDisplayValue }}</span>
+          <span class="big-value-comparison-label">{{ resolvedComparisonTitle }}</span>
+        </template>
+      </div>
     </template>
   </div>
 </template>
@@ -323,6 +400,9 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
   font-weight: 700;
   line-height: 1;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .big-value-subtitle {
@@ -379,6 +459,51 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
   opacity: 0.6;
 }
 
+/* Info tooltip icon */
+.info-tooltip {
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.info-tooltip:hover {
+  opacity: 0.8;
+}
+
+.info-icon {
+  vertical-align: middle;
+}
+
+/* Error state */
+.bigvalue-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  background-color: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.bigvalue-error-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #ef4444;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Empty states */
 .empty-state {
   padding: 12px 16px;
   border-radius: 4px;
@@ -390,6 +515,12 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
   background-color: rgba(107, 114, 128, 0.06);
   border: 1px solid rgba(107, 114, 128, 0.15);
   color: #6b7280;
+}
+
+.empty-error {
+  background-color: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.15);
+  color: #ef4444;
 }
 </style>
 

@@ -13,7 +13,7 @@ import EChartsBase from '../core/EChartsBase.vue';
 import ChartFooter from '../core/ChartFooter.vue';
 import { useChartConfig, getDistinctValues } from '../../composables/useChartConfig';
 import { useThemeStores } from '../../composables/useTheme';
-import { formatValue, formatAxisValue, getFormatObjectFromString } from '../../utils/formatting';
+import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
 
 const props = withDefaults(defineProps<HistogramProps>(), {
   fillOpacity: 1,
@@ -36,13 +36,15 @@ const {
   processedData,
   columnSummary: _columnSummary,
   baseConfig,
-  formats,
-  unitSummaries
+  formats
 } = useChartConfig(props, { chartType: 'Histogram' });
 
 // Resolve colors
 const fillColorResolved = computed(() =>
   props.fillColor ? resolveColor(props.fillColor).value : undefined
+);
+const outlineColorResolved = computed(() =>
+  props.outlineColor ? resolveColor(props.outlineColor).value : undefined
 );
 const colorPaletteResolved = computed(() =>
   resolveColorPalette(props.colorPalette || 'default').value
@@ -92,9 +94,6 @@ const histogramData = computed(() => {
   return result;
 });
 
-// Get the x format for tooltip formatting
-const xFormat = computed(() => formats.value.x);
-
 // Y format for histogram: since there's no y data column, formats.value.y is always undefined.
 // Build it from yFmt prop directly if provided.
 const yFormat = computed(() =>
@@ -111,6 +110,7 @@ const chartConfig = computed<EChartsOption>(() => {
   // X-axis: continuous value axis (NOT category)
   // Preserve base config props (grid, legend, etc.) but override axis type and formatting
   const baseXAxis = config.xAxis as Record<string, unknown> | undefined;
+  const xFmtObj = formats.value.x;
   config.xAxis = {
     ...baseXAxis,
     type: 'value' as const,
@@ -120,27 +120,34 @@ const chartConfig = computed<EChartsOption>(() => {
     axisLabel: {
       show: props.xAxisLabels !== false,
       hideOverlap: true,
-      formatter: (value: number) => formatAxisValue(value, formats.value.x, unitSummaries.value.x)
+      rotate: props.xAxisLabelRotate || undefined,
+      formatter: (value: number) => formatValue(value, xFmtObj)
     }
   };
 
   // Y-axis: frequency counts
+  // Always start at 0 and use simple integer formatting for counts
+  // (matches Evidence's yMin=0 default and axisLabel.formatter: null)
   const baseYAxis = config.yAxis as Record<string, unknown> | undefined;
   config.yAxis = {
     ...baseYAxis,
     type: 'value' as const,
+    min: 0,
     boundaryGap: ['0%', '1%'] as [string, string],
     axisLabel: {
       show: props.yAxisLabels !== false,
       hideOverlap: true,
-      formatter: (value: number) => formatAxisValue(value, yFormat.value)
+      formatter: yFormat.value
+        ? (value: number) => formatValue(value, yFormat.value)
+        : (value: number) => String(Math.round(value))
     }
   };
 
   // Custom series type with renderItem (matches Evidence's Hist.svelte)
   const resolvedFill = fillColorResolved.value as string | undefined;
+  const resolvedOutline = outlineColorResolved.value as string | undefined;
+  const outlineWidth = props.outlineWidth ?? 0;
   const opacity = props.fillOpacity;
-  const xFmt = xFormat.value;
 
   config.series = [
     {
@@ -167,7 +174,9 @@ const chartConfig = computed<EChartsOption>(() => {
           },
           style: {
             fill: resolvedFill ?? barColor,
-            opacity
+            opacity,
+            stroke: resolvedOutline,
+            lineWidth: outlineWidth
           }
         };
       }) as never,
@@ -182,7 +191,8 @@ const chartConfig = computed<EChartsOption>(() => {
           const binMin = p.value[2];
           const binMax = p.value[3];
           const count = p.value[1];
-          return `<span style='font-weight:600;'>${formatValue(binMin, xFmt)} - ${formatValue(binMax, xFmt)}</span> <span style='margin-left: 10px;'>${count}</span>`;
+          // Use formatValue consistently (same as x-axis labels) for format consistency
+          return `<span style='font-weight:600;'>${formatValue(binMin, xFmtObj)} - ${formatValue(binMax, xFmtObj)}</span> <span style='margin-left: 10px;'>${count}</span>`;
         }) as never
       },
       z: 3

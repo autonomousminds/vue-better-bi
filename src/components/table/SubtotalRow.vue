@@ -44,6 +44,27 @@ function getAggValue(column: TableColumnConfig) {
     column.weightCol,
   );
 }
+
+const AGG_LABELS: Record<string, string> = {
+  sum: 'Sum',
+  mean: 'Mean',
+  median: 'Median',
+  min: 'Min',
+  max: 'Max',
+  count: 'Count',
+  countDistinct: 'Distinct',
+  weightedMean: 'Wt. Mean',
+};
+
+function getAggLabel(column: TableColumnConfig): string {
+  const agg = column.totalAgg || 'sum';
+  return AGG_LABELS[agg] || agg;
+}
+
+function hasMeaningfulAgg(column: TableColumnConfig): boolean {
+  const val = getAggValue(column);
+  return val !== null && val !== undefined && val !== '-';
+}
 </script>
 
 <template>
@@ -59,6 +80,7 @@ function getAggValue(column: TableColumnConfig) {
         class="subtotal-cell"
       >
         <template v-if="column.id !== groupBy">
+          <span v-if="hasMeaningfulAgg(column)" class="agg-label">{{ getAggLabel(column) }}</span>
           <DeltaCell
             v-if="column.contentType === 'delta'"
             :value="Number(getAggValue(column))"
@@ -92,5 +114,14 @@ function getAggValue(column: TableColumnConfig) {
 
 .subtotal-cell {
   font-weight: 500;
+}
+
+.agg-label {
+  font-size: 0.7em;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--table-agg-label-color, #6b7280);
+  margin-right: 0.35em;
 }
 </style>

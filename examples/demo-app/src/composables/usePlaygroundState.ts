@@ -99,7 +99,12 @@ const groupedProps = computed(() => {
 // Ensure column config state exists for a chart (called outside of computeds to avoid side effects)
 function ensureColumnConfigState(chartId: string) {
   if (!columnConfigStates[chartId]) {
-    columnConfigStates[chartId] = {};
+    const chart = chartRegistry.find(c => c.id === chartId);
+    if (chart?.initialColumnConfigs) {
+      columnConfigStates[chartId] = JSON.parse(JSON.stringify(chart.initialColumnConfigs));
+    } else {
+      columnConfigStates[chartId] = {};
+    }
   }
 }
 
@@ -182,8 +187,10 @@ function updateProp(name: string, value: unknown) {
 }
 
 function resetToDefaults() {
-  chartStates[selectedChartId.value] = initializeState(currentChart.value.props);
-  delete columnConfigStates[selectedChartId.value];
+  const id = selectedChartId.value;
+  chartStates[id] = initializeState(currentChart.value.props);
+  delete columnConfigStates[id];
+  ensureColumnConfigState(id);
 }
 
 function selectChart(id: string) {
