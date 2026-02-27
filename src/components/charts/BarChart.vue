@@ -348,12 +348,20 @@ const chartConfig = computed<EChartsOption>(() => {
   // Handle stack total labels
   if (props.stackTotalLabel && isStacked.value) {
     const seriesArray = seriesData.value;
-    // Add a hidden series for stack total labels
+    // Build data with proper x-axis category values so no extra "0" category appears.
+    // Each point is [xValue, 0] (vertical) or [0, xValue] (horizontal) — the zero
+    // value means the bar has no height but the label formatter computes the real total.
+    const stackTotalData = (seriesArray[0]?.data ?? []).map((d) => {
+      const point = d as unknown[];
+      const xVal = props.swapXY ? point[1] : point[0];
+      return props.swapXY ? [0, xVal] : [xVal, 0];
+    });
+
     const stackTotalSeries = {
       name: 'stackTotal',
       type: 'bar' as const,
       stack: 'total',
-      itemStyle: { color: 'transparent' },
+      color: 'none',
       label: {
         show: true,
         position: props.swapXY ? 'right' as const : 'top' as const,
@@ -361,7 +369,6 @@ const chartConfig = computed<EChartsOption>(() => {
         fontSize: props.labelSize || 11,
         padding: props.swapXY ? [0, 0, 0, 5] as [number, number, number, number] : undefined,
         formatter: (params: { value: unknown[]; dataIndex: number }) => {
-          // Calculate total from all real series (not the stackTotal itself)
           let total = 0;
           for (const s of seriesArray) {
             const dataPoint = s.data[params.dataIndex] as unknown[];
@@ -377,15 +384,17 @@ const chartConfig = computed<EChartsOption>(() => {
           return formatValue(total, format, unitSummaries.value.y);
         }
       },
-      data: seriesArray[0]?.data.map(() => [0, 0]) || []
+      data: stackTotalData
     };
     (config.series as unknown[]).push(stackTotalSeries);
 
     // Disable legend toggle when stackTotalLabel is shown — toggling individual
-    // series would break the total calculation (matches Evidence behavior)
+    // series would break the total calculation (matches Evidence behavior).
+    // Also filter stackTotal from legend data so it doesn't appear as a legend item.
     const legendConfig = config.legend as Record<string, unknown> | undefined;
     if (legendConfig) {
       legendConfig.selectedMode = false;
+      legendConfig.data = seriesArray.map((s) => (s as { name: string }).name);
     }
   }
 
