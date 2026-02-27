@@ -129,7 +129,9 @@ const lineSeriesConfig = computed<Partial<SeriesConfig>>(() => {
     symbolSize: props.markers ? props.markerSize : (props.labels ? 0 : undefined),
     label: props.labels ? {
       show: true,
-      position: props.labelPosition || ((props.swapXY ?? false) ? 'right' : 'top'),
+      position: props.labelPosition === 'outside'
+        ? ((props.swapXY ?? false) ? 'right' : 'top')
+        : (props.labelPosition || ((props.swapXY ?? false) ? 'right' : 'top')),
       fontSize: props.labelSize || 11,
       color: labelColorResolved.value,
       padding: 3,

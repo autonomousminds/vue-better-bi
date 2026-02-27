@@ -26,7 +26,8 @@ const props = withDefaults(defineProps<BarChartProps>(), {
   xAxisLabels: true,
   yAxisLabels: true,
   downloadableData: true,
-  downloadableImage: true
+  downloadableImage: true,
+  seriesLabels: true,
 });
 
 const emit = defineEmits<{
@@ -199,6 +200,15 @@ const barSeriesConfig = computed<Partial<SeriesConfig>>(() => {
     ? 'inside'
     : (props.swapXY ? 'right' : 'top');
 
+  // Resolve label position: map 'outside' to proper ECharts positions (Evidence pattern)
+  // 'outside' is not a reliable ECharts position for bar charts — map it explicitly
+  const labelPositionMap: Record<string, string> = props.swapXY
+    ? { outside: 'right', inside: 'inside' }
+    : { outside: 'top', inside: 'inside' };
+  const resolvedPosition = props.labelPosition
+    ? (labelPositionMap[props.labelPosition] ?? props.labelPosition)
+    : defaultPosition;
+
   return {
     type: 'bar',
     stack: stacked ? 'total' : undefined,
@@ -211,7 +221,7 @@ const barSeriesConfig = computed<Partial<SeriesConfig>>(() => {
     },
     label: props.labels ? {
       show: showSeriesLabels,
-      position: props.labelPosition || defaultPosition,
+      position: resolvedPosition,
       fontSize: props.labelSize || 11,
       color: labelColorResolved.value,
       formatter: (params: { value: unknown[]; seriesIndex: number }) => {

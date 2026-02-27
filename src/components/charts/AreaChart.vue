@@ -130,7 +130,7 @@ const areaSeriesConfig = computed<Partial<SeriesConfig>>(() => {
     symbolSize: props.markers ? props.markerSize : 0,
     label: props.labels ? {
       show: true,
-      position: props.labelPosition || 'top',
+      position: props.labelPosition === 'outside' ? 'top' : (props.labelPosition || 'top'),
       fontSize: props.labelSize || 11,
       color: labelColorResolved.value,
       formatter: (params: { value: unknown[]; seriesIndex: number }) => {
