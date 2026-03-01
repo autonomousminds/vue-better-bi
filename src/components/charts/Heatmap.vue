@@ -156,26 +156,25 @@ const heatmapData = computed(() => {
   return { xCategories, yCategories, data, min, max };
 });
 
-// Compute dynamic height based on row count and cellHeight
-const dynamicHeight = computed(() => {
-  if (props.height) return props.height;
-
-  const { yCategories } = heatmapData.value;
-  const gridHeight = props.chartAreaHeight ?? Math.max(100, yCategories.length * (props.cellHeight ?? 30));
-  const hasTitle = props.title !== undefined;
-  const hasSubtitle = props.subtitle !== undefined;
-  const legendSpace = props.legend ? 35 : 0;
-  const titleSpace = hasTitle ? 18 : 0;
-  const subtitleSpace = hasSubtitle ? 18 : 0;
-  const totalHeight = 20 + legendSpace + titleSpace + subtitleSpace + gridHeight;
-  return `${totalHeight}px`;
+// Space reserved below the grid for visualMap legend + padding
+const bottomChrome = computed(() => {
+  return (props.legend ? 35 : 0) + 20;
 });
 
-// Compute grid height for the ECharts grid config
-const gridHeight = computed(() => {
-  const { yCategories } = heatmapData.value;
-  return props.chartAreaHeight ?? Math.max(100, yCategories.length * (props.cellHeight ?? 30));
+// Space reserved above the grid for title/subtitle
+const topOffset = computed(() => {
+  return (props.title ? 20 : 0) + (props.subtitle ? 20 : 0) + 8;
 });
+
+// Minimum height: auto-computed from content so the chart never collapses
+const minHeight = computed(() => {
+  const { yCategories } = heatmapData.value;
+  const autoGridHeight = props.chartAreaHeight ?? Math.max(100, yCategories.length * (props.cellHeight ?? 30));
+  return `${topOffset.value + autoGridHeight + bottomChrome.value}px`;
+});
+
+// Container height: use 100% to fill parent, with min-height as floor
+const dynamicHeight = computed(() => '100%');
 
 // Build chart config
 const chartConfig = computed<EChartsOption>(() => {
@@ -216,11 +215,10 @@ const chartConfig = computed<EChartsOption>(() => {
       }
     },
     grid: {
-      height: gridHeight.value,
-      top: (props.title ? 20 : 0) + (props.subtitle ? 20 : 0) + 8,
+      top: topOffset.value,
+      bottom: bottomChrome.value,
       left: 0,
       right: 2,
-      containLabel: true
     },
     xAxis: {
       type: 'category',
@@ -317,31 +315,47 @@ const hovering = ref(false);
 </script>
 
 <template>
-  <EChartsBase
-    :config="chartConfig"
-    :data="props.data"
-    :title="props.title"
-    :title-icon="props.titleIcon"
-    :subtitle="props.subtitle"
-    :height="dynamicHeight"
-    :width="props.width"
-    :renderer="props.renderer"
-    :echarts-options="props.echartsOptions"
-    :background-color="props.backgroundColor"
-    @click="emit('click', $event)"
-    @mouseenter="hovering = true"
-    @mouseleave="hovering = false"
-  >
-    <template #footer>
-      <ChartFooter
-        :config="chartConfig"
-        :data="props.data"
-        :chart-title="props.title"
-        :echarts-options="props.echartsOptions"
-        :downloadable-data="props.downloadableData"
-        :downloadable-image="props.downloadableImage"
-        :visible="hovering"
-      />
-    </template>
-  </EChartsBase>
+  <div class="heatmap-fill" :style="{ minHeight }">
+    <EChartsBase
+      :config="chartConfig"
+      :data="props.data"
+      :title="props.title"
+      :title-icon="props.titleIcon"
+      :subtitle="props.subtitle"
+      :height="dynamicHeight"
+      :width="props.width"
+      :renderer="props.renderer"
+      :echarts-options="props.echartsOptions"
+      :background-color="props.backgroundColor"
+      @click="emit('click', $event)"
+      @mouseenter="hovering = true"
+      @mouseleave="hovering = false"
+    >
+      <template #footer>
+        <ChartFooter
+          :config="chartConfig"
+          :data="props.data"
+          :chart-title="props.title"
+          :echarts-options="props.echartsOptions"
+          :downloadable-data="props.downloadableData"
+          :downloadable-image="props.downloadableImage"
+          :visible="hovering"
+        />
+      </template>
+    </EChartsBase>
+  </div>
 </template>
+
+<style scoped>
+.heatmap-fill {
+  height: 100%;
+}
+.heatmap-fill :deep(.chart-container) {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.heatmap-fill :deep(.echarts-base) {
+  flex: 1;
+}
+</style>

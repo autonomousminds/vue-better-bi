@@ -140,7 +140,7 @@ const lineSeriesConfig = computed<Partial<SeriesConfig>>(() => {
         if (value === 0 || value == null) return '';
         const isY2 = seriesData.value[params.seriesIndex]?.yAxisIndex === 1;
         const labelFmt = isY2
-          ? (props.y2LabelFmt || props.labelFmt)
+          ? props.y2LabelFmt
           : (props.yLabelFmt || props.labelFmt);
         const format = labelFmt
           ? getFormatObjectFromString(labelFmt)
