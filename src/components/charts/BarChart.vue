@@ -5,7 +5,7 @@
  */
 
 import { computed, ref } from 'vue';
-import type { EChartsOption } from 'echarts';
+import type { EChartsOption, ECharts } from 'echarts';
 import type { BarChartProps, SeriesConfig } from '../../types';
 import EChartsBase from '../core/EChartsBase.vue';
 import ChartFooter from '../core/ChartFooter.vue';
@@ -358,10 +358,12 @@ const chartConfig = computed<EChartsOption>(() => {
     });
 
     const stackTotalSeries = {
-      name: 'stackTotal',
+      // No `name` so ECharts won't add it to the legend
       type: 'bar' as const,
       stack: 'total',
       color: 'none',
+      tooltip: { show: false },
+      emphasis: { disabled: true },
       label: {
         show: true,
         position: props.swapXY ? 'right' as const : 'top' as const,
@@ -369,8 +371,17 @@ const chartConfig = computed<EChartsOption>(() => {
         fontSize: props.labelSize || 11,
         padding: props.swapXY ? [0, 0, 0, 5] as [number, number, number, number] : undefined,
         formatter: (params: { value: unknown[]; dataIndex: number }) => {
+          // Read legend state directly from the chart instance at call time.
+          // This avoids the reactive chain (ref → computed → setOption) which
+          // causes animation overlap with stale formatters.
+          const legendState = chartInstanceRef
+            ? ((chartInstanceRef.getOption() as Record<string, unknown[]>)?.legend?.[0] as Record<string, unknown> | undefined)?.selected as Record<string, boolean> | undefined
+            : undefined;
           let total = 0;
           for (const s of seriesArray) {
+            const seriesName = (s as { name?: string }).name;
+            // Skip series hidden by legend toggle
+            if (legendState && seriesName && legendState[seriesName] === false) continue;
             const dataPoint = s.data[params.dataIndex] as unknown[];
             if (dataPoint) {
               total += (dataPoint[props.swapXY ? 0 : 1] as number) || 0;
@@ -387,15 +398,6 @@ const chartConfig = computed<EChartsOption>(() => {
       data: stackTotalData
     };
     (config.series as unknown[]).push(stackTotalSeries);
-
-    // Disable legend toggle when stackTotalLabel is shown — toggling individual
-    // series would break the total calculation (matches Evidence behavior).
-    // Also filter stackTotal from legend data so it doesn't appear as a legend item.
-    const legendConfig = config.legend as Record<string, unknown> | undefined;
-    if (legendConfig) {
-      legendConfig.selectedMode = false;
-      legendConfig.data = seriesArray.map((s) => (s as { name: string }).name);
-    }
   }
 
   // Merge interactive features
@@ -439,6 +441,14 @@ const chartConfig = computed<EChartsOption>(() => {
 });
 
 const hovering = ref(false);
+
+// Store chart instance so the stackTotal formatter can read current legend state
+// directly from ECharts — no reactive chain needed.
+let chartInstanceRef: ECharts | null = null;
+
+function onChartInit(chart: ECharts) {
+  chartInstanceRef = chart;
+}
 </script>
 
 <template>
@@ -459,6 +469,7 @@ const hovering = ref(false);
     :swap-x-y="props.swapXY"
     :background-color="props.backgroundColor"
     @click="emit('click', $event)"
+    @init="onChartInit"
     @mouseenter="hovering = true"
     @mouseleave="hovering = false"
   >
