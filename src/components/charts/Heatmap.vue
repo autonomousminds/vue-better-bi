@@ -156,6 +156,12 @@ const heatmapData = computed(() => {
   return { xCategories, yCategories, data, min, max };
 });
 
+// Grid height: explicit pixel height for the heatmap grid area (matches Evidence)
+const gridHeight = computed(() => {
+  const { yCategories } = heatmapData.value;
+  return props.chartAreaHeight ?? Math.max(100, yCategories.length * (props.cellHeight ?? 30));
+});
+
 // Space reserved below the grid for visualMap legend + padding
 const bottomChrome = computed(() => {
   return (props.legend ? 35 : 0) + 20;
@@ -166,15 +172,13 @@ const topOffset = computed(() => {
   return (props.title ? 20 : 0) + (props.subtitle ? 20 : 0) + 8;
 });
 
-// Minimum height: auto-computed from content so the chart never collapses
-const minHeight = computed(() => {
-  const { yCategories } = heatmapData.value;
-  const autoGridHeight = props.chartAreaHeight ?? Math.max(100, yCategories.length * (props.cellHeight ?? 30));
-  return `${topOffset.value + autoGridHeight + bottomChrome.value}px`;
+// Auto-computed pixel height based on categories (fallback when no height prop)
+const autoHeight = computed(() => {
+  return `${topOffset.value + gridHeight.value + bottomChrome.value}px`;
 });
 
-// Container height: use 100% to fill parent, with min-height as floor
-const dynamicHeight = computed(() => '100%');
+// Effective height: user-provided height wins, otherwise auto-computed
+const effectiveHeight = computed(() => props.height ?? autoHeight.value);
 
 // Build chart config
 const chartConfig = computed<EChartsOption>(() => {
@@ -183,6 +187,12 @@ const chartConfig = computed<EChartsOption>(() => {
   const valColumn = props.value;
   const zeroDisp = props.zeroDisplay;
   const isFilter = props.filter;
+
+  // When user provides height, use top/bottom so grid fills the container.
+  // When using auto height, use explicit grid.height for precise rendering.
+  const gridConfig = props.height
+    ? { top: topOffset.value, bottom: bottomChrome.value, left: 0, right: 2 }
+    : { height: gridHeight.value, top: topOffset.value, left: 0, right: 2 };
 
   return {
     animation: false,
@@ -214,12 +224,7 @@ const chartConfig = computed<EChartsOption>(() => {
         return output;
       }
     },
-    grid: {
-      top: topOffset.value,
-      bottom: bottomChrome.value,
-      left: 0,
-      right: 2,
-    },
+    grid: gridConfig,
     xAxis: {
       type: 'category',
       data: xCategories,
@@ -315,14 +320,14 @@ const hovering = ref(false);
 </script>
 
 <template>
-  <div class="heatmap-fill" :style="{ minHeight }">
+  <div class="heatmap-wrapper" :style="{ minHeight: autoHeight }">
     <EChartsBase
       :config="chartConfig"
       :data="props.data"
       :title="props.title"
       :title-icon="props.titleIcon"
       :subtitle="props.subtitle"
-      :height="dynamicHeight"
+      :height="effectiveHeight"
       :width="props.width"
       :renderer="props.renderer"
       :echarts-options="props.echartsOptions"
@@ -347,15 +352,7 @@ const hovering = ref(false);
 </template>
 
 <style scoped>
-.heatmap-fill {
-  height: 100%;
-}
-.heatmap-fill :deep(.chart-container) {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.heatmap-fill :deep(.echarts-base) {
-  flex: 1;
+.heatmap-wrapper {
+  width: 100%;
 }
 </style>
