@@ -144,24 +144,110 @@ const data = [
 
 ## Formatting
 
-Use the `yFmt`, `xFmt`, or `valueFmt` props to format values:
-
-### Currency Formats
-- `usd`, `usd0`, `usd1`, `usd2` - US Dollars
-- `usd0k`, `usd1k`, `usd2k` - USD in thousands
-- `usd0m`, `usd1m`, `usd2m` - USD in millions
-- `eur`, `gbp`, `jpy`, `cny`, etc. - Other currencies
+Use the `yFmt`, `xFmt`, or `valueFmt` props on charts, or the `fmt` property on DataTable column configs.
 
 ### Number Formats
-- `num0`, `num1`, `num2`, `num3`, `num4` - Decimals
-- `num0k`, `num1k`, `num2k` - Thousands
-- `num0m`, `num1m`, `num2m` - Millions
-- `pct`, `pct0`, `pct1`, `pct2`, `pct3` - Percentages
 
-### Date Formats
-- `shortdate`, `longdate`, `fulldate`
-- `mdy`, `dmy`, `hms`
-- `mmm`, `mmmm`, `yyyy`
+| Tag | Example Input | Output |
+|-----|---------------|--------|
+| `num0` | 11.23 | 11 |
+| `num1` | 11.23 | 11.2 |
+| `num2` | 11.23 | 11.23 |
+| `num3` | 11.23 | 11.232 |
+| `num4` | 11.23 | 11.2317 |
+| `num0k` | 64201 | 64k |
+| `num1k` | 64201 | 64.2k |
+| `num2k` | 64201 | 64.20k |
+| `num0m` | 42539483 | 43M |
+| `num1m` | 42539483 | 42.5M |
+| `num2m` | 42539483 | 42.54M |
+| `num0b` | 1384937584 | 1B |
+| `num1b` | 1384937584 | 1.4B |
+| `num2b` | 1384937584 | 1.38B |
+| `id` | 921594675 | 921594675 |
+| `fract` | 0.25 | 1/4 |
+| `mult` | 5.32 | 5.3x |
+| `mult0` | 5.32 | 5x |
+| `mult1` | 5.32 | 5.3x |
+| `mult2` | 5.32 | 5.32x |
+| `sci` | 16546.16 | 1.65E+4 |
+
+### Percent Formats
+
+| Tag | Example Input | Output |
+|-----|---------------|--------|
+| `pct` | 0.731 | 73% (auto) |
+| `pct0` | 0.731 | 73% |
+| `pct1` | 0.731 | 73.1% |
+| `pct2` | 0.731 | 73.10% |
+| `pct3` | 0.731 | 73.100% |
+
+### Currency Formats
+
+Each currency supports the same suffixes: _(none)_, `0`, `1`, `2`, `0k`, `1k`, `2k`, `0m`, `1m`, `2m`, `0b`, `1b`, `2b`.
+
+| Tag pattern | Example Input | Output |
+|-------------|---------------|--------|
+| `usd` | 412.17 | $412 (auto-scaled) |
+| `usd0` | 7043.12 | $7,043 |
+| `usd1` | 7043.12 | $7,043.1 |
+| `usd2` | 7043.12 | $7,043.12 |
+| `usd0k` | 64301 | $64k |
+| `usd1k` | 64301 | $64.3k |
+| `usd2k` | 64301 | $64.30k |
+| `usd0m` | 4564301 | $5M |
+| `usd1m` | 4564301 | $4.6M |
+| `usd2m` | 4564301 | $4.56M |
+| `usd0b` | 9784564301 | $10B |
+| `usd1b` | 9784564301 | $9.8B |
+| `usd2b` | 9784564301 | $9.78B |
+
+**Available currencies:**
+
+| Tag prefix | Symbol | Currency |
+|------------|--------|----------|
+| `usd` | $ | US Dollar |
+| `aud` | A$ | Australian Dollar |
+| `brl` | R$ | Brazilian Real |
+| `cad` | C$ | Canadian Dollar |
+| `cny` | ¥ | Chinese Renminbi |
+| `eur` | € | Euro |
+| `gbp` | £ | British Pound |
+| `inr` | ₹ | Indian Rupee |
+| `jpy` | ¥ | Japanese Yen |
+| `krw` | ₩ | South Korean Won |
+| `ngn` | ₦ | Nigerian Naira |
+| `rub` | rub | Russian Ruble |
+| `sek` | kr | Swedish Krona |
+
+### Date/Time Formats
+
+Date formats require the data to contain actual date values (ISO strings like `2022-01-09T12:45:00` or Date objects).
+
+| Tag | Example Input | Output |
+|-----|---------------|--------|
+| `ddd` | 2022-01-09 12:45 | Sun |
+| `dddd` | 2022-01-09 12:45 | Sunday |
+| `mmm` | 2022-01-09 12:45 | Jan |
+| `mmmm` | 2022-01-09 12:45 | January |
+| `yyyy` | 2022-01-09 12:45 | 2022 |
+| `shortdate` | 2022-01-09 12:45 | Jan 9/22 |
+| `longdate` | 2022-01-09 12:45 | January 9, 2022 |
+| `fulldate` | 2022-01-09 12:45 | Sunday January 9, 2022 |
+| `mdy` | 2022-01-09 12:45 | 1/9/22 |
+| `dmy` | 2022-01-09 12:45 | 9/1/22 |
+| `hms` | 2022-01-09 11:45:03 | 11:45:03 AM |
+
+### Custom Format Codes
+
+Any string that doesn't match a built-in tag is passed through as a raw [SSF format code](https://docs.sheetjs.com/docs/csf/general/), giving you full control:
+
+```
+"fmt": "mmm dd, h:mm AM/PM"    → Mar 05, 10:32 PM
+"fmt": "yyyy-mm-dd"            → 2022-01-09
+"fmt": "#,##0.00"              → 7,043.12
+"fmt": "0.0%"                  → 73.1%
+```
 
 ## Theming
 
@@ -738,7 +824,7 @@ import { DataTable, Column } from '@autonomousminds-public/vue-better-bi';
 | `fmt` | `string` | auto | Format string (e.g. `'usd0'`, `'pct1'`, `'num2'`) |
 | `fmtColumn` | `string` | - | Column containing per-row format strings |
 | `contentType` | `string` | - | Rich content type (see below) |
-| `totalAgg` | `string` | - | Aggregation for total row: `sum`, `mean`, `median`, `min`, `max`, `count`, `countDistinct`, `weightedMean` |
+| `totalAgg` | `string` | - | Aggregation for total row: `sum`, `mean`, `median`, `min`, `max`, `count`, `countDistinct`, `weightedMean`, or a formula (see below) |
 | `totalFmt` | `string` | - | Format for total row value |
 | `subtotalFmt` | `string` | - | Format for subtotal row value |
 | `weightCol` | `string` | - | Weight column for `weightedMean` aggregation |
@@ -870,6 +956,30 @@ Renders the cell value as raw HTML.
   <Column id="growth" contentType="delta" fmt="pct1" totalAgg="mean" />
 </DataTable>
 ```
+
+### Formula-based Total Aggregation
+
+For columns where standard aggregations produce meaningless totals (e.g. a percentage change column), `totalAgg` accepts formula strings starting with `=`. Formulas reference other columns and compute the total from their aggregated values.
+
+```vue
+<DataTable :data="data" :totalRow="true">
+  <Column id="current_revenue" fmt="usd0" totalAgg="sum" />
+  <Column id="prev_revenue" fmt="usd0" totalAgg="sum" />
+  <Column
+    id="yoy_change"
+    fmt="pct1"
+    contentType="delta"
+    totalAgg="=sum(current_revenue) / sum(prev_revenue) - 1"
+  />
+</DataTable>
+```
+
+**Syntax:**
+- Wrap column names in an aggregation function: `sum(col)`, `mean(col)`, `median(col)`, `min(col)`, `max(col)`, `count(col)`, `countDistinct(col)`
+- Bare column names use that column's own `totalAgg` (default: `sum`): `=current_revenue / prev_revenue - 1`
+- Arithmetic operators `+ - * / ( )` are supported
+- Formula columns suppress the aggregation label (no "Sum" / "Mean" prefix in the total row)
+- Formulas work in both total rows and subtotal rows (computed per group)
 
 ## BigValue
 

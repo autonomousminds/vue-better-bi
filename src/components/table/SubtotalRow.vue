@@ -2,6 +2,7 @@
 import type { TableColumnConfig, ColumnSummaryItem, GroupType } from '../../types/table.types';
 import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
 import { safeExtractColumn, aggregateColumn } from '../../utils/tableUtils';
+import { isFormula, evaluateFormula } from '../../utils/formulaUtils';
 import TableCell from './TableCell.vue';
 import DeltaCell from './DeltaCell.vue';
 
@@ -35,6 +36,9 @@ function getFormat(column: TableColumnConfig) {
 }
 
 function getAggValue(column: TableColumnConfig) {
+  if (isFormula(column.totalAgg)) {
+    return evaluateFormula(column.totalAgg, props.currentGroupData, props.orderedColumns, props.columnSummary);
+  }
   const useCol = safeExtractColumn(column, props.columnSummary);
   return aggregateColumn(
     props.currentGroupData,
@@ -80,7 +84,7 @@ function hasMeaningfulAgg(column: TableColumnConfig): boolean {
         class="subtotal-cell"
       >
         <template v-if="column.id !== groupBy">
-          <span v-if="hasMeaningfulAgg(column)" class="agg-label">{{ getAggLabel(column) }}</span>
+          <span v-if="!isFormula(column.totalAgg) && hasMeaningfulAgg(column)" class="agg-label">{{ getAggLabel(column) }}</span>
           <DeltaCell
             v-if="column.contentType === 'delta'"
             :value="Number(getAggValue(column))"

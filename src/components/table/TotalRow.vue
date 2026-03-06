@@ -2,6 +2,7 @@
 import type { TableColumnConfig, ColumnSummaryItem, GroupType } from '../../types/table.types';
 import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
 import { safeExtractColumn, weightedMean } from '../../utils/tableUtils';
+import { isFormula, evaluateFormula } from '../../utils/formulaUtils';
 import TableCell from './TableCell.vue';
 import DeltaCell from './DeltaCell.vue';
 
@@ -17,8 +18,12 @@ const props = defineProps<{
 }>();
 
 function getAggValue(column: TableColumnConfig) {
+  if (isFormula(column.totalAgg)) {
+    return evaluateFormula(column.totalAgg, props.data, props.orderedColumns, props.columnSummary);
+  }
+
   const colSummary = safeExtractColumn(column, props.columnSummary);
-  const totalAgg = column.totalAgg || 'sum';
+  const totalAgg: string = column.totalAgg || 'sum';
 
   if (totalAgg === 'weightedMean') {
     return weightedMean(props.data, column.id, column.weightCol);
@@ -86,8 +91,8 @@ function hasMeaningfulAgg(column: TableColumnConfig): boolean {
         :top-border="true"
         class="total-cell"
       >
-        <template v-if="['sum', 'mean', 'weightedMean', 'median', 'min', 'max', 'count', 'countDistinct'].includes(column.totalAgg || 'sum')">
-          <span v-if="hasMeaningfulAgg(column)" class="agg-label">{{ getAggLabel(column) }}</span>
+        <template v-if="isFormula(column.totalAgg) || ['sum', 'mean', 'weightedMean', 'median', 'min', 'max', 'count', 'countDistinct'].includes(column.totalAgg || 'sum')">
+          <span v-if="!isFormula(column.totalAgg) && hasMeaningfulAgg(column)" class="agg-label">{{ getAggLabel(column) }}</span>
           <DeltaCell
             v-if="column.contentType === 'delta'"
             :value="Number(getAggValue(column))"

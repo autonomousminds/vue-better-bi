@@ -27,6 +27,7 @@ import Pagination from './Pagination.vue';
 import TableFooter from './TableFooter.vue';
 import FullscreenButton from './FullscreenButton.vue';
 import ChartHeader from '../core/ChartHeader.vue';
+import { exportToCsv } from '../../utils/tableUtils';
 
 const props = withDefaults(defineProps<DataTableProps>(), {
   rows: 10,
@@ -411,6 +412,27 @@ function handleFullscreenKeydown(e: KeyboardEvent) {
     closeFullscreen();
   }
 }
+
+// ─── Export ─────────────────────────────────────────────────────────────
+async function handleExportExcel() {
+  const { exportToXlsx } = await import('../../utils/excelExport');
+  await exportToXlsx({
+    data: sortedData.value,
+    columns: orderedColumns.value,
+    columnSummary: columnSummary.value,
+    groupBy: props.groupBy,
+    groupedData: props.groupBy ? groupedData.value : undefined,
+    sortedGroupNames: props.groupBy ? sortedGroupNames.value : undefined,
+    subtotals: props.subtotals,
+    totalRow: props.totalRow,
+    title: props.title,
+    filename: props.title || 'table-data',
+  });
+}
+
+function handleExportCsv() {
+  exportToCsv(props.data, exportColumns.value, props.title || 'table-data');
+}
 </script>
 
 <template>
@@ -580,9 +602,9 @@ function handleFullscreenKeydown(e: KeyboardEvent) {
       <div class="footer-actions">
         <TableFooter
           v-if="downloadable"
-          :data="data"
-          :columns="exportColumns"
           :visible="hovering"
+          @export-csv="handleExportCsv"
+          @export-excel="handleExportExcel"
         />
         <FullscreenButton :visible="hovering" @open="isFullscreen = true" />
       </div>
@@ -590,9 +612,9 @@ function handleFullscreenKeydown(e: KeyboardEvent) {
     <div v-else class="footer-actions-right">
       <TableFooter
         v-if="downloadable"
-        :data="data"
-        :columns="exportColumns"
         :visible="hovering"
+        @export-csv="handleExportCsv"
+        @export-excel="handleExportExcel"
       />
       <FullscreenButton :visible="hovering" @open="isFullscreen = true" />
     </div>
@@ -612,10 +634,7 @@ function handleFullscreenKeydown(e: KeyboardEvent) {
         </svg>
       </button>
       <div class="fullscreen-content">
-        <div v-if="title || subtitle" class="table-title-section">
-          <div v-if="title" class="table-title" :class="{ 'has-subtitle': !!subtitle }">{{ title }}</div>
-          <div v-if="subtitle" class="table-subtitle">{{ subtitle }}</div>
-        </div>
+        <ChartHeader :title="title" :title-icon="titleIcon" :subtitle="subtitle" />
         <div class="scrollbox" :style="{ backgroundColor: backgroundColor || undefined }">
           <table>
             <TableHeader

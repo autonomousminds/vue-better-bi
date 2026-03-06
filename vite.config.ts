@@ -33,7 +33,7 @@ export default defineConfig({
     },
     cssCodeSplit: false,
     rollupOptions: {
-      external: ['vue', 'echarts'],
+      external: ['vue', 'echarts', 'exceljs'],
       output: {
         globals: {
           vue: 'Vue',
