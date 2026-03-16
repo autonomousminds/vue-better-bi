@@ -50,6 +50,10 @@ export function inferValueType(value: unknown): ValueType {
     if (!isNaN(dateAttempt.getTime()) && value.match(/\d{4}-\d{2}-\d{2}/)) {
       return 'date';
     }
+    // Check if it's a numeric string (e.g. from CSV data: "3006.840000")
+    if (value.trim() !== '' && !isNaN(Number(value))) {
+      return 'number';
+    }
   }
   return 'string';
 }

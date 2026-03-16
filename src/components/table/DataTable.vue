@@ -136,7 +136,24 @@ const autoColumns = computed<TableColumnConfig[]>(() => {
 
 const effectiveColumns = computed<TableColumnConfig[]>(() => {
   // Use registered columns if <Column> children exist, else auto-generate
-  if (registeredColumns.value.length > 0) return registeredColumns.value;
+  if (registeredColumns.value.length > 0) {
+    // Sort registered columns by their position in data keys.
+    // Vue's patchKeyedChildren may mount Column children in reverse order
+    // when all keys change (e.g. switching between different tables),
+    // causing registerColumn push-order to be reversed.
+    const dataKeys = props.data?.[0] ? Object.keys(props.data[0]) : [];
+    if (dataKeys.length > 0) {
+      return [...registeredColumns.value].sort((a, b) => {
+        const ia = dataKeys.indexOf(a.id);
+        const ib = dataKeys.indexOf(b.id);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        if (ia !== -1) return -1;
+        if (ib !== -1) return 1;
+        return 0;
+      });
+    }
+    return registeredColumns.value;
+  }
   return autoColumns.value;
 });
 
@@ -197,11 +214,17 @@ watch(
   () => props.sort,
   (sort) => {
     if (sort) {
-      const parts = sort.split(' ');
-      sortState.value = {
-        col: parts[0],
-        ascending: parts[1] !== 'desc',
-      };
+      // Split on last space to support column names with spaces (e.g. "FY Total desc")
+      const lastSpace = sort.lastIndexOf(' ');
+      const possibleDir = lastSpace > 0 ? sort.substring(lastSpace + 1) : '';
+      if (possibleDir === 'desc' || possibleDir === 'asc') {
+        sortState.value = {
+          col: sort.substring(0, lastSpace),
+          ascending: possibleDir !== 'desc',
+        };
+      } else {
+        sortState.value = { col: sort, ascending: true };
+      }
     }
   },
   { immediate: true }

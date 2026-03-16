@@ -65,6 +65,7 @@ function hasMeaningfulAgg(column: TableColumnConfig): boolean {
   const val = getAggValue(column);
   return val !== null && val !== undefined && val !== '-';
 }
+
 </script>
 
 <template>

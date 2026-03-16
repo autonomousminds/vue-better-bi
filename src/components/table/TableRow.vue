@@ -57,7 +57,6 @@ function getCellColor(column: TableColumnConfig, row: Record<string, unknown>): 
     (column.colorMid != null ? [colMin, column.colorMid, colMax] : [colMin, colMax]);
 
   try {
-    // Resolve color scale - named presets map to specific palettes
     const COLOR_SCALE_PRESETS: Record<string, string[]> = {
       default: ['#c6dbef', '#6baed6', '#2171b5'],
       positive: ['#c6f6d5', '#48bb78', '#276749'],
@@ -75,9 +74,8 @@ function getCellColor(column: TableColumnConfig, row: Record<string, unknown>): 
     }
     const scale = chroma.scale(scaleColors).domain(domain);
     const value = column.scaleColumn ? row[column.scaleColumn] : row[column.id];
-    // Handle nodata — return neutral background for null/undefined/NaN
     if (value === null || value === undefined || (typeof value === 'number' && isNaN(value))) {
-      return '#f3f4f6'; // base-100 neutral color for nodata
+      return '#f3f4f6';
     }
     return scale(Number(value)).hex();
   } catch {

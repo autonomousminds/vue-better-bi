@@ -55,6 +55,7 @@ function getAggValue(column: TableColumnConfig) {
     column.weightCol,
   );
 }
+
 </script>
 
 <template>
