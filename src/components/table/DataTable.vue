@@ -735,7 +735,7 @@ function handleExportCsv() {
 
 table {
   display: table;
-  width: 100%;
+  min-width: 100%;
   border-collapse: collapse;
   font-variant-numeric: tabular-nums;
 }

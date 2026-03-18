@@ -828,6 +828,9 @@ import { DataTable, Column } from '@autonomousminds-public/vue-better-bi';
 | `totalFmt` | `string` | - | Format for total row value |
 | `subtotalFmt` | `string` | - | Format for subtotal row value |
 | `weightCol` | `string` | - | Weight column for `weightedMean` aggregation |
+| `width` | `string` | - | CSS width for the column (e.g. `'200px'`, `'20%'`) |
+| `minWidth` | `string` | - | CSS min-width for the column (e.g. `'150px'`) |
+| `maxWidth` | `string` | - | CSS max-width for the column (e.g. `'300px'`) |
 | `wrap` | `boolean` | `false` | Allow cell content to wrap |
 | `wrapTitle` | `boolean` | `false` | Allow column title to wrap |
 | `colGroup` | `string` | - | Group columns under a shared header |

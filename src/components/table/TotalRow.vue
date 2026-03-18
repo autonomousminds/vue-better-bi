@@ -88,6 +88,8 @@ function hasMeaningfulAgg(column: TableColumnConfig): boolean {
         :align="column.align"
         :height="column.height"
         :width="column.width"
+        :min-width="column.minWidth"
+        :max-width="column.maxWidth"
         :wrap="column.wrap"
         :top-border="true"
         class="total-cell"

@@ -186,6 +186,8 @@ function navigateToLink(row: Record<string, unknown>, event: MouseEvent) {
         :padding-left="k === 0 && grouped && groupType === 'accordion' && !rowNumbers ? '28px' : undefined"
         :height="column.height"
         :width="column.width"
+        :min-width="column.minWidth"
+        :max-width="column.maxWidth"
         :wrap="column.wrap"
         :cell-color="getCellColor(column, row)"
         :font-color="getFontColor(column, row, getCellColor(column, row))"

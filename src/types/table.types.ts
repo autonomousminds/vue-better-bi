@@ -56,9 +56,11 @@ export interface TableColumnConfig {
   // Content type
   contentType?: ColumnContentType;
 
-  // Image
+  // Sizing
   height?: string;
   width?: string;
+  minWidth?: string;
+  maxWidth?: string;
   alt?: string;
 
   // Links
@@ -253,9 +255,11 @@ export interface ColumnProps {
   /** Format string for subtotals */
   subtotalFmt?: string;
 
-  // Image
+  // Sizing
   height?: string;
   width?: string;
+  minWidth?: string;
+  maxWidth?: string;
   alt?: string;
 
   // Link

@@ -25,9 +25,11 @@ const props = withDefaults(defineProps<{
   weightCol?: string;
   subtotalFmt?: string;
 
-  // Image
+  // Sizing
   height?: string;
   width?: string;
+  minWidth?: string;
+  maxWidth?: string;
   alt?: string;
 
   // Link
@@ -116,6 +118,8 @@ const columnConfig = computed<TableColumnConfig>(() => ({
   subtotalFmt: props.subtotalFmt,
   height: props.height,
   width: props.width,
+  minWidth: props.minWidth,
+  maxWidth: props.maxWidth,
   alt: props.alt,
   openInNewTab: props.openInNewTab,
   linkLabel: props.linkLabel,

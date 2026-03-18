@@ -116,6 +116,9 @@ function getColumnsWithGroupSpan() {
           cursor: sortable ? 'pointer' : 'auto',
           verticalAlign: 'bottom',
           borderRadius: sortState.col === column.id ? '2px' : '',
+          width: column.width || undefined,
+          minWidth: column.minWidth || undefined,
+          maxWidth: column.maxWidth || undefined,
         } as CSSProperties"
         @click="sortable ? emit('sortClick', column.id) : undefined"
       >

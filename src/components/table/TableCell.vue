@@ -6,6 +6,8 @@ const props = withDefaults(defineProps<{
   align?: string;
   height?: string;
   width?: string;
+  minWidth?: string;
+  maxWidth?: string;
   wrap?: boolean;
   verticalAlign?: string;
   rowSpan?: number;
@@ -29,6 +31,8 @@ const cellStyle = computed<CSSProperties>(() => ({
   textAlign: (props.align as CSSProperties['textAlign']) || undefined,
   height: props.height,
   width: props.width,
+  minWidth: props.minWidth || undefined,
+  maxWidth: props.maxWidth || undefined,
   whiteSpace: props.wrap ? 'normal' : 'nowrap',
   verticalAlign: props.verticalAlign as CSSProperties['verticalAlign'],
   display: props.show ? undefined : 'none',
