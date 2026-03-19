@@ -13,6 +13,8 @@ import { useChartConfig, getSeriesConfig } from '../../composables/useChartConfi
 import { useThemeStores } from '../../composables/useTheme';
 import { useInteractiveFeatures } from '../../composables/useInteractiveFeatures';
 import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
+import { getStackPercentages } from '../../utils/getStackPercentages';
+import { getCompletedData, replaceNulls } from '../../utils/getCompletedData';
 
 const props = withDefaults(defineProps<AreaChartProps>(), {
   type: 'stacked',
@@ -78,7 +80,7 @@ const y2AxisColorResolved = computed(() =>
 
 // Process chart configuration
 const {
-  processedData,
+  processedData: rawProcessedData,
   columnSummary,
   xAxisType: _xAxisType,
   baseConfig,
@@ -90,6 +92,54 @@ const {
   resolvedColorPalette: () => colorPaletteResolved.value,
   resolvedYAxisColor: () => yAxisColorResolved.value,
   resolvedY2AxisColor: () => y2AxisColorResolved.value
+});
+
+// Derive the y-columns list (needed for data transforms)
+const yColumns = computed<string[]>(() => {
+  if (!props.y) return [];
+  return Array.isArray(props.y) ? props.y : [props.y];
+});
+
+const isStacked = computed(() =>
+  props.type === 'stacked' || props.type === 'stacked100'
+);
+
+/**
+ * Processed data pipeline (mirrors BarChart):
+ * 1. Data completion — fill missing x/series combinations with zeros (stacked charts)
+ * 2. Null replacement — replace null y values with 0 (stacked charts)
+ * 3. Stacked100 transformation — convert raw values to percentages
+ */
+const processedData = computed(() => {
+  let data = [...rawProcessedData.value];
+  if (data.length === 0 || !props.x || !props.y) return data;
+
+  const x = props.x;
+  const yCols = yColumns.value;
+
+  // --- 1. Data completion for stacked charts ---
+  if (isStacked.value && props.series) {
+    data = getCompletedData(data, x, props.y, props.series, { nullsZero: true });
+  }
+
+  // --- 2. Replace null y values with 0 for stacked charts ---
+  if (isStacked.value) {
+    data = replaceNulls(data, yCols);
+  }
+
+  // --- 3. Stacked100 transformation ---
+  if (props.type === 'stacked100') {
+    const result = getStackPercentages(data, x, yCols);
+    data = result.data.map(row => {
+      const newRow = { ...row };
+      for (let i = 0; i < yCols.length; i++) {
+        newRow[yCols[i]] = row[result.yColumns[i]];
+      }
+      return newRow;
+    });
+  }
+
+  return data;
 });
 
 // Map line type to ECharts format
