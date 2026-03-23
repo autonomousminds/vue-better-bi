@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { watch } from 'vue';
 import type { TableColumnConfig, ColumnSummaryItem, GroupType, GroupNamePosition } from '../../types/table.types';
 import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
 import { safeExtractColumn } from '../../utils/tableUtils';
@@ -29,8 +30,21 @@ const props = withDefaults(defineProps<{
   groupNamePosition: 'middle',
 });
 
+// Build a fast O(1) lookup map for column summary (avoids O(n) .find() per cell)
+const columnSummaryMap = new Map<string, ColumnSummaryItem>();
+watch(() => props.columnSummary, (summary) => {
+  columnSummaryMap.clear();
+  for (const item of summary) {
+    columnSummaryMap.set(item.id, item);
+  }
+}, { immediate: true });
+
+function fastExtractColumn(column: { id: string }): ColumnSummaryItem {
+  return columnSummaryMap.get(column.id) ?? safeExtractColumn(column, props.columnSummary);
+}
+
 function getColumnFormat(column: TableColumnConfig, row: Record<string, unknown>) {
-  const useCol = safeExtractColumn(column, props.columnSummary);
+  const useCol = fastExtractColumn(column);
   if (column.fmt) {
     return getFormatObjectFromString(column.fmt, useCol.format?.valueType);
   }
@@ -40,30 +54,36 @@ function getColumnFormat(column: TableColumnConfig, row: Record<string, unknown>
   return useCol.format;
 }
 
-function getCellColor(column: TableColumnConfig, row: Record<string, unknown>): string {
-  if (column.contentType !== 'colorscale') return '';
-  const useCol = safeExtractColumn(column, props.columnSummary);
+const COLOR_SCALE_PRESETS: Record<string, string[]> = {
+  default: ['#c6dbef', '#6baed6', '#2171b5'],
+  positive: ['#c6f6d5', '#48bb78', '#276749'],
+  negative: ['#fed7d7', '#fc8181', '#c53030'],
+  info: ['#bee3f8', '#63b3ed', '#2b6cb0'],
+};
+
+// Cache chroma scale instances per column to avoid expensive recreation per cell
+const scaleCache = new Map<string, chroma.Scale | null>();
+
+function getOrCreateScale(column: TableColumnConfig): chroma.Scale | null {
+  // Build a cache key from the column's scale-affecting properties
+  const useCol = fastExtractColumn(column);
   const scaleCol = column.scaleColumn
-    ? props.columnSummary.find((d) => d.id === column.scaleColumn) || useCol
+    ? (columnSummaryMap.get(column.scaleColumn) || useCol)
     : useCol;
 
   const colMin = column.colorMin ?? scaleCol.columnUnitSummary?.min ?? 0;
   const colMax = column.colorMax ?? scaleCol.columnUnitSummary?.max ?? 0;
   const isNonZero = colMax - colMin !== 0 && !isNaN(colMax) && !isNaN(colMin);
 
-  if (!isNonZero || !column.colorScale) return '';
+  if (!isNonZero || !column.colorScale) return null;
+
+  const cacheKey = `${column.id}:${colMin}:${colMax}:${column.colorMid}:${column.colorScale}:${column.colorBreakpoints}`;
+  if (scaleCache.has(cacheKey)) return scaleCache.get(cacheKey)!;
 
   const domain = column.colorBreakpoints ??
     (column.colorMid != null ? [colMin, column.colorMid, colMax] : [colMin, colMax]);
 
   try {
-    const COLOR_SCALE_PRESETS: Record<string, string[]> = {
-      default: ['#c6dbef', '#6baed6', '#2171b5'],
-      positive: ['#c6f6d5', '#48bb78', '#276749'],
-      negative: ['#fed7d7', '#fc8181', '#c53030'],
-      info: ['#bee3f8', '#63b3ed', '#2b6cb0'],
-    };
-
     let scaleColors: string[];
     if (typeof column.colorScale === 'string' && column.colorScale in COLOR_SCALE_PRESETS) {
       scaleColors = COLOR_SCALE_PRESETS[column.colorScale];
@@ -73,26 +93,46 @@ function getCellColor(column: TableColumnConfig, row: Record<string, unknown>): 
       scaleColors = [column.colorScale as string];
     }
     const scale = chroma.scale(scaleColors).domain(domain);
-    const value = column.scaleColumn ? row[column.scaleColumn] : row[column.id];
-    if (value === null || value === undefined || (typeof value === 'number' && isNaN(value))) {
-      return '#f3f4f6';
-    }
-    return scale(Number(value)).hex();
+    scaleCache.set(cacheKey, scale);
+    return scale;
   } catch {
-    return '';
+    scaleCache.set(cacheKey, null);
+    return null;
   }
 }
+
+// Invalidate cache when column summary changes (new data)
+watch(() => props.columnSummary, () => scaleCache.clear());
+
+function getCellColor(column: TableColumnConfig, row: Record<string, unknown>): string {
+  if (column.contentType !== 'colorscale') return '';
+  const scale = getOrCreateScale(column);
+  if (!scale) return '';
+  const value = column.scaleColumn ? row[column.scaleColumn] : row[column.id];
+  if (value === null || value === undefined || (typeof value === 'number' && isNaN(value))) {
+    return '#f3f4f6';
+  }
+  return scale(Number(value)).hex();
+}
+
+// Cache font color decisions for cell background colors
+const fontColorCache = new Map<string, string>();
 
 function getFontColor(column: TableColumnConfig, row: Record<string, unknown>, cellColor: string): string {
   if (column.redNegatives && Number(row[column.id]) < 0) {
     return '#e53e3e';
   }
   if (cellColor) {
+    const cached = fontColorCache.get(cellColor);
+    if (cached !== undefined) return cached;
     try {
       const contrastDark = chroma.contrast(cellColor, '#1a1a1a');
       const contrastLight = chroma.contrast(cellColor, '#ffffff');
-      return contrastLight > contrastDark + 0.5 ? '#ffffff' : '#1a1a1a';
+      const result = contrastLight > contrastDark + 0.5 ? '#ffffff' : '#1a1a1a';
+      fontColorCache.set(cellColor, result);
+      return result;
     } catch {
+      fontColorCache.set(cellColor, '');
       return '';
     }
   }
@@ -116,7 +156,7 @@ function getCellBorderBottom(column: TableColumnConfig, cellColor: string, rowIn
 }
 
 function formatCellValue(column: TableColumnConfig, row: Record<string, unknown>): string {
-  const useCol = safeExtractColumn(column, props.columnSummary);
+  const useCol = fastExtractColumn(column);
   const format = getColumnFormat(column, row);
   return formatValue(row[column.id], format, useCol.columnUnitSummary);
 }
@@ -177,7 +217,7 @@ function navigateToLink(row: Record<string, unknown>, event: MouseEvent) {
     <!-- Data cells -->
     <template v-for="(column, k) in orderedColumns" :key="String(column.identifier)">
       <TableCell
-        :data-type="safeExtractColumn(column, columnSummary).type"
+        :data-type="fastExtractColumn(column).type"
         :compact="compact"
         :vertical-align="groupType === 'section' ? groupNamePosition : undefined"
         :row-span="groupType === 'section' && groupColumn === column.id && i === 0 ? rowSpan : 1"
@@ -232,7 +272,7 @@ function navigateToLink(row: Record<string, unknown>, event: MouseEvent) {
             :value="Number(row[column.id])"
             :down-is-good="column.downIsGood"
             :format-object="getColumnFormat(column, row)"
-            :column-unit-summary="safeExtractColumn(column, columnSummary).columnUnitSummary"
+            :column-unit-summary="fastExtractColumn(column).columnUnitSummary"
             :show-value="column.showValue !== false"
             :show-symbol="column.deltaSymbol !== false"
             :align="column.align"

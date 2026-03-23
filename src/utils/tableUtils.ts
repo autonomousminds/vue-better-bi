@@ -144,14 +144,18 @@ function getColumnUnitSummary(
   columnName: string,
   isNumeric: boolean
 ): ColumnUnitSummary {
-  const values = data
-    .map((row) => row[columnName])
-    .filter((v): v is number | string => v !== undefined && v !== null);
+  // Single pass to collect values, count, and count distinct
+  let count = 0;
+  const distinctSet = new Set<unknown>();
 
-  const count = values.length;
-  const countDistinct = new Set(values).size;
-
-  if (!isNumeric || count === 0) {
+  if (!isNumeric) {
+    for (const row of data) {
+      const v = row[columnName];
+      if (v !== undefined && v !== null) {
+        count++;
+        distinctSet.add(v);
+      }
+    }
     return {
       min: undefined as unknown as number,
       max: undefined as unknown as number,
@@ -159,60 +163,58 @@ function getColumnUnitSummary(
       maxDecimals: 0,
       unitType: 'string',
       count,
-      countDistinct,
+      countDistinct: distinctSet.size,
       mean: undefined as unknown as number,
       sum: undefined as unknown as number,
     };
   }
 
-  const numericValues = values.map(Number).filter((v) => !isNaN(v));
-
-  if (numericValues.length === 0) {
-    return {
-      min: 0,
-      max: 0,
-      median: 0,
-      maxDecimals: 0,
-      unitType: 'number',
-      count,
-      countDistinct,
-      mean: 0,
-      sum: 0,
-    };
-  }
-
-  const sorted = [...numericValues].sort((a, b) => a - b);
-  const min = sorted[0];
-  const max = sorted[sorted.length - 1];
-  const sum = sorted.reduce((s, v) => s + v, 0);
-  const mean = sum / sorted.length;
-
-  const midIdx = Math.floor(sorted.length / 2);
-  const medianVal =
-    sorted.length % 2 !== 0
-      ? sorted[midIdx]
-      : (sorted[midIdx - 1] + sorted[midIdx]) / 2;
-
-  // Calculate max decimals
+  // Single pass for numeric: collect values, compute min/max/sum, track decimals
+  const numericValues: number[] = [];
+  let min = Infinity;
+  let max = -Infinity;
+  let sum = 0;
   let maxDecimals = 0;
-  for (const val of numericValues) {
-    const str = String(val);
+
+  for (const row of data) {
+    const v = row[columnName];
+    if (v === undefined || v === null) continue;
+    count++;
+    distinctSet.add(v);
+    const num = Number(v);
+    if (isNaN(num)) continue;
+    numericValues.push(num);
+    if (num < min) min = num;
+    if (num > max) max = num;
+    sum += num;
+    // Track decimals
+    const str = String(v);
     const dotIdx = str.indexOf('.');
     if (dotIdx !== -1) {
-      maxDecimals = Math.max(maxDecimals, str.length - dotIdx - 1);
+      const dec = str.length - dotIdx - 1;
+      if (dec > maxDecimals) maxDecimals = dec;
     }
   }
 
+  if (numericValues.length === 0) {
+    return {
+      min: 0, max: 0, median: 0, maxDecimals: 0,
+      unitType: 'number', count, countDistinct: distinctSet.size, mean: 0, sum: 0,
+    };
+  }
+
+  const mean = sum / numericValues.length;
+
+  // For median, sort is required but only do it once (already collected)
+  numericValues.sort((a, b) => a - b);
+  const midIdx = Math.floor(numericValues.length / 2);
+  const medianVal = numericValues.length % 2 !== 0
+    ? numericValues[midIdx]
+    : (numericValues[midIdx - 1] + numericValues[midIdx]) / 2;
+
   return {
-    min,
-    max,
-    median: medianVal,
-    maxDecimals,
-    unitType: 'number',
-    count,
-    countDistinct,
-    mean,
-    sum,
+    min, max, median: medianVal, maxDecimals,
+    unitType: 'number', count, countDistinct: distinctSet.size, mean, sum,
   };
 }
 
@@ -336,6 +338,54 @@ export function autoConvertDateColumns(
       const val = newRow[col];
       if (val != null && typeof val === 'string') {
         newRow[col] = new Date(standardizeDateString(val));
+      }
+    }
+    return newRow;
+  });
+}
+
+/**
+ * Detects number-typed columns with string values and converts them to numbers.
+ * Returns a new data array with converted numeric columns.
+ * Mutates in-place if data was already cloned by autoConvertDateColumns (same ref check).
+ */
+export function autoConvertNumericColumns(
+  data: Record<string, unknown>[],
+  columnSummary: ColumnSummaryItem[],
+  originalData?: Record<string, unknown>[]
+): Record<string, unknown>[] {
+  if (!data || data.length === 0) return data;
+
+  const numCols = columnSummary
+    .filter((c) => c.type === 'number' && typeof data[0]?.[c.id] === 'string')
+    .map((c) => c.id);
+
+  if (numCols.length === 0) return data;
+
+  // If data was already cloned (not same ref as original), mutate in-place to avoid
+  // a second full-dataset clone for 20K+ row tables.
+  const alreadyCloned = originalData !== undefined && data !== originalData;
+
+  if (alreadyCloned) {
+    for (const row of data) {
+      for (const col of numCols) {
+        const val = row[col];
+        if (val != null && typeof val === 'string') {
+          const num = Number(val);
+          if (!isNaN(num)) row[col] = num;
+        }
+      }
+    }
+    return data;
+  }
+
+  return data.map((row) => {
+    const newRow = { ...row };
+    for (const col of numCols) {
+      const val = newRow[col];
+      if (val != null && typeof val === 'string') {
+        const num = Number(val);
+        if (!isNaN(num)) newRow[col] = num;
       }
     }
     return newRow;

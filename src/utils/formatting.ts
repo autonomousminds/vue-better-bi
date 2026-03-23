@@ -11,6 +11,63 @@ import { standardizeDateString } from './dateParsing';
 const AXIS_FORMATTING_CONTEXT = 'axis';
 const VALUE_FORMATTING_CONTEXT = 'value';
 
+/** Regex to find the trailing comma+suffix pattern in an SSF format code, e.g. ,,"M" or ,"k" */
+const FORMAT_UNIT_SUFFIX_RE = /,+"[kMBT]"$/;
+
+/** Ordered from largest to smallest: unit letter, divisor, comma count, SSF suffix */
+const UNIT_LEVELS: { unit: string; divisor: number; commas: number; suffix: string }[] = [
+  { unit: 'T', divisor: 1_000_000_000_000, commas: 4, suffix: ',,,,"T"' },
+  { unit: 'B', divisor: 1_000_000_000, commas: 3, suffix: ',,,"B"' },
+  { unit: 'M', divisor: 1_000_000, commas: 2, suffix: ',,"M"' },
+  { unit: 'k', divisor: 1_000, commas: 1, suffix: ',"k"' },
+];
+
+/**
+ * Uses the column median to determine the best unit for a format code that has a
+ * unit suffix (k/M/B/T). Returns a rewritten format code, or null if no change needed.
+ *
+ * This ensures all values in a column use the same unit — e.g., if the median is 600k,
+ * a `num0m` format code gets rewritten to `num0k` so all values show "Xk" consistently.
+ *
+ * Uses the same thresholds as Evidence's getAutoColumnUnit:
+ *   >= 5T → T, >= 5B → B, >= 5M → M, >= 5k → k, else no unit
+ */
+function getMedianAdjustedFormatCode(
+  formatCode: string,
+  median: number
+): string | null {
+  // Only applies to formats with a unit suffix like ,,"M" or ,"k"
+  const suffixMatch = formatCode.match(FORMAT_UNIT_SUFFIX_RE);
+  if (!suffixMatch) return null;
+
+  const oldSuffix = suffixMatch[0];
+  const baseCode = formatCode.slice(0, -oldSuffix.length); // e.g., "#,##0" or "$#,##0.00"
+
+  // Determine the right unit based on median (same thresholds as Evidence's getAutoColumnUnit)
+  const absMedian = Math.abs(median);
+  let targetLevel: typeof UNIT_LEVELS[number] | null = null;
+  for (const level of UNIT_LEVELS) {
+    if (absMedian >= level.divisor * 5) {
+      targetLevel = level;
+      break;
+    }
+  }
+
+  // Extract the current unit from the format code
+  const currentUnit = oldSuffix.charAt(oldSuffix.length - 2);
+  const targetUnit = targetLevel?.unit ?? '';
+
+  // If the median-determined unit matches what the format already uses, no change
+  if (targetUnit === currentUnit) return null;
+
+  // Build the new format code with the median-appropriate unit
+  if (!targetLevel) {
+    // Median is too small for any unit suffix — use plain format
+    return baseCode;
+  }
+  return baseCode + targetLevel.suffix;
+}
+
 // Custom formats storage
 let customFormats: FormatObject[] = [];
 
@@ -266,7 +323,14 @@ function applyFormatting(
         }
       } else if (formattingCode) {
         try {
-          return ssf.format(formattingCode, typedValue);
+          // If the format has a unit suffix (k/M/B/T) and we have column stats,
+          // adjust the unit based on the median so all values use a consistent scale
+          let effectiveCode = formattingCode;
+          if (typeof typedValue === 'number' && columnUnitSummary?.median !== undefined) {
+            const adjusted = getMedianAdjustedFormatCode(formattingCode, columnUnitSummary.median);
+            if (adjusted !== null) effectiveCode = adjusted;
+          }
+          return ssf.format(effectiveCode, typedValue);
         } catch (error) {
           console.warn(`Unexpected error applying ssf formatting: ${error}`);
         }

@@ -46,19 +46,29 @@ const percentFormat = computed(() =>
     : { formatTag: 'pct1', formatCode: '#,##0.0%', valueType: 'number' as const }
 );
 
-// Process pie data
+// Process pie data — hide labels+lines for slices under 2% of total
 const pieData = computed(() => {
   if (!props.data?.length) return [];
 
   const nameCol = props.name || Object.keys(props.data[0])[0];
   const valueCol = props.value || Object.keys(props.data[0])[1];
 
-  return props.data
+  const items = props.data
     .map((row) => ({
       name: String(row[nameCol]),
       value: row[valueCol] as number
     }))
     .filter((d) => d.value > 0);
+
+  const total = items.reduce((sum, d) => sum + d.value, 0);
+  const MIN_LABEL_PCT = 0.02;
+
+  return items.map((d) => {
+    const isSmall = total > 0 && d.value / total < MIN_LABEL_PCT;
+    return isSmall
+      ? { ...d, label: { show: false }, labelLine: { show: false } }
+      : d;
+  });
 });
 
 // Compute the inner radius for donut mode
@@ -177,8 +187,13 @@ const chartConfig = computed<EChartsOption>(() => {
             return p.name;
           }
         },
+        labelLayout: {
+          hideOverlap: true
+        },
         labelLine: {
-          show: props.labels && props.labelPosition === 'outside'
+          show: props.labels && props.labelPosition === 'outside',
+          length: 15,
+          length2: 10
         },
         emphasis: {
           itemStyle: {

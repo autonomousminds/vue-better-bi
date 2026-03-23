@@ -16,7 +16,7 @@ import type {
 } from '../../types/table.types';
 import type { TableContext } from '../../symbols/injectionKeys';
 import { tableContextKey } from '../../symbols/injectionKeys';
-import { getColumnSummary, getFinalColumnOrder, aggregateColumn, autoConvertDateColumns } from '../../utils/tableUtils';
+import { getColumnSummary, getFinalColumnOrder, aggregateColumn, autoConvertDateColumns, autoConvertNumericColumns } from '../../utils/tableUtils';
 import TableHeader from './TableHeader.vue';
 import TableRow from './TableRow.vue';
 import GroupRow from './GroupRow.vue';
@@ -108,21 +108,29 @@ const tableContext: TableContext = reactive({
 provide(tableContextKey, tableContext);
 
 // ─── Column Summary ────────────────────────────────────────────────────
-const columnSummary = computed<ColumnSummaryItem[]>(() => {
+// Compute summary once and reuse for both columnSummary and processedData
+// to avoid the expensive O(n×m) getColumnSummary() running twice.
+const rawColumnSummary = computed<ColumnSummaryItem[]>(() => {
   if (!props.data || props.data.length === 0) return [];
   return getColumnSummary(props.data);
 });
 
-// ─── Date Auto-Conversion ───────────────────────────────────────────────
-// Compute separately from columnSummary to avoid circular reactive pressure.
-// Only re-runs when props.data changes (not when columnSummary changes).
+// ─── Date/Numeric Auto-Conversion ───────────────────────────────────────
 const processedData = computed(() => {
   if (!props.data || props.data.length === 0) return props.data;
-  // Detect date-typed string columns by checking the column summary snapshot
-  // Use getColumnSummary directly instead of the columnSummary computed to avoid
-  // creating a reactive dependency loop.
-  const summary = getColumnSummary(props.data);
-  return autoConvertDateColumns(props.data, summary);
+  const summary = rawColumnSummary.value;
+  const withDates = autoConvertDateColumns(props.data, summary);
+  // Pass original ref so autoConvertNumericColumns can mutate in-place
+  // when data was already cloned by autoConvertDateColumns (avoids second 20K clone)
+  return autoConvertNumericColumns(withDates, summary, props.data);
+});
+
+// Re-derive column summary from processed data only if conversions happened
+const columnSummary = computed<ColumnSummaryItem[]>(() => {
+  if (processedData.value === props.data) return rawColumnSummary.value;
+  // Conversions happened — update min/max/median from converted values
+  // but reuse structure to avoid full recompute
+  return getColumnSummary(processedData.value);
 });
 
 // ─── Auto-generated columns (when no <Column> children) ────────────────
@@ -280,13 +288,24 @@ const groupedData = computed<Record<string, Record<string, unknown>[]>>(() => {
   }, {});
 });
 
+// Large dataset threshold: auto-collapse all groups when total rows exceed this
+const LARGE_DATASET_THRESHOLD = 200;
+
+// For large grouped datasets, override groupsOpen to false so only header rows render initially
+const effectiveGroupsOpen = computed(() => {
+  if (!props.groupBy) return props.groupsOpen;
+  const totalRows = sortedData.value.length;
+  if (totalRows > LARGE_DATASET_THRESHOLD && props.groupsOpen) return false;
+  return props.groupsOpen;
+});
+
 // Initialize toggle states for new groups
 watch(
   groupedData,
   (newGroups) => {
     for (const groupName of Object.keys(newGroups)) {
       if (!(groupName in groupToggleStates.value)) {
-        groupToggleStates.value[groupName] = props.groupsOpen;
+        groupToggleStates.value[groupName] = effectiveGroupsOpen.value;
       }
     }
   },
@@ -295,6 +314,36 @@ watch(
 
 function handleToggle(groupName: string) {
   groupToggleStates.value[groupName] = !groupToggleStates.value[groupName];
+}
+
+// Limit visible rows per expanded group to avoid DOM explosion
+const GROUP_ROW_LIMIT = 100;
+const groupRowLimits = ref<Record<string, number>>({});
+
+function getVisibleGroupData(groupName: string): Record<string, unknown>[] {
+  const data = groupedData.value[groupName];
+  if (!data) return [];
+  const limit = groupRowLimits.value[groupName] ?? GROUP_ROW_LIMIT;
+  return data.length > limit ? data.slice(0, limit) : data;
+}
+
+function showMoreRows(groupName: string) {
+  const current = groupRowLimits.value[groupName] ?? GROUP_ROW_LIMIT;
+  groupRowLimits.value[groupName] = current + GROUP_ROW_LIMIT;
+}
+
+function isGroupTruncated(groupName: string): boolean {
+  const data = groupedData.value[groupName];
+  if (!data) return false;
+  const limit = groupRowLimits.value[groupName] ?? GROUP_ROW_LIMIT;
+  return data.length > limit;
+}
+
+function groupTruncatedCount(groupName: string): number {
+  const data = groupedData.value[groupName];
+  if (!data) return 0;
+  const limit = groupRowLimits.value[groupName] ?? GROUP_ROW_LIMIT;
+  return Math.max(0, data.length - limit);
 }
 
 // Sort group names
@@ -527,7 +576,7 @@ function handleExportCsv() {
                 />
                 <TableRow
                   v-if="groupToggleStates[groupName]"
-                  :displayed-data="groupedData[groupName]"
+                  :displayed-data="getVisibleGroupData(groupName)"
                   :ordered-columns="orderedColumns"
                   :column-summary="columnSummary"
                   :group-type="groupType"
@@ -540,16 +589,29 @@ function handleExportCsv() {
                   :grouped="true"
                   :group-column="groupBy"
                 />
+                <tr v-if="groupToggleStates[groupName] && isGroupTruncated(groupName)" class="show-more-row">
+                  <td :colspan="orderedColumns.length + (rowNumbers ? 1 : 0)">
+                    <button class="show-more-btn" @click.stop="showMoreRows(groupName)">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                      Show {{ Math.min(GROUP_ROW_LIMIT, groupTruncatedCount(groupName)).toLocaleString() }} more
+                      <span class="show-more-meta">
+                        ({{ (groupedData[groupName].length - groupTruncatedCount(groupName)).toLocaleString() }} / {{ groupedData[groupName].length.toLocaleString() }})
+                      </span>
+                    </button>
+                  </td>
+                </tr>
               </template>
 
               <!-- Section mode -->
               <template v-else-if="groupType === 'section'">
                 <TableRow
-                  :displayed-data="groupedData[groupName]"
+                  :displayed-data="getVisibleGroupData(groupName)"
                   :ordered-columns="orderedColumns"
                   :column-summary="columnSummary"
                   :group-type="groupType"
-                  :row-span="groupedData[groupName].length"
+                  :row-span="getVisibleGroupData(groupName).length"
                   :row-shading="rowShading"
                   :link="link"
                   :row-numbers="rowNumbers"
@@ -724,6 +786,43 @@ function handleExportCsv() {
 
 .table-container.table-paginated {
   margin-bottom: 20px;
+}
+
+.show-more-row td {
+  padding: 0;
+  border-bottom: 1px solid var(--table-border-color, #e5e7eb);
+  position: sticky;
+  left: 0;
+}
+
+.show-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  background: var(--table-row-shading, #f9fafb);
+  border: none;
+  color: var(--table-muted-color, #6b7280);
+  cursor: pointer;
+  font-size: 0.88em;
+  font-weight: 500;
+  padding: 8px 16px;
+  transition: all 150ms;
+}
+
+.show-more-btn:hover {
+  background: #eef2f7;
+  color: var(--table-link-color, #3b82f6);
+}
+
+.show-more-btn svg {
+  flex-shrink: 0;
+}
+
+.show-more-meta {
+  color: var(--table-muted-color, #9ca3af);
+  font-weight: 400;
 }
 
 

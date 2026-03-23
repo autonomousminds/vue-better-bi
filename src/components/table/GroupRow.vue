@@ -2,6 +2,7 @@
 import type { TableColumnConfig, ColumnSummaryItem } from '../../types/table.types';
 import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
 import { safeExtractColumn, aggregateColumn } from '../../utils/tableUtils';
+import { isFormula, evaluateFormula } from '../../utils/formulaUtils';
 import TableCell from './TableCell.vue';
 import DeltaCell from './DeltaCell.vue';
 
@@ -46,6 +47,9 @@ function getFormat(column: TableColumnConfig) {
 }
 
 function getAggValue(column: TableColumnConfig) {
+  if (isFormula(column.totalAgg)) {
+    return evaluateFormula(column.totalAgg, props.currentGroupData, props.orderedColumns, props.columnSummary);
+  }
   const useCol = safeExtractColumn(column, props.columnSummary);
   return aggregateColumn(
     props.currentGroupData,
@@ -94,7 +98,7 @@ function getAggValue(column: TableColumnConfig) {
         :align="column.align"
         class="group-subtotal-cell"
       >
-        <template v-if="[undefined, 'sum', 'mean', 'median', 'min', 'max', 'weightedMean', 'count', 'countDistinct'].includes(column.totalAgg) || column.subtotalFmt">
+        <template v-if="[undefined, 'sum', 'mean', 'median', 'min', 'max', 'weightedMean', 'count', 'countDistinct'].includes(column.totalAgg) || isFormula(column.totalAgg) || column.subtotalFmt">
           <DeltaCell
             v-if="column.contentType === 'delta'"
             :value="Number(getAggValue(column))"
