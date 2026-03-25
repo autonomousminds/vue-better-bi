@@ -50,14 +50,14 @@ const assembledProps = computed(() => {
 
   for (const propDef of chart.props) {
     if (propDef.subProps) {
-      // Compound prop (zoom, toolbox, animation, tooltip)
+      // Compound prop (zoom, toolbox, animation, tooltip, table)
       const enabled = state[propDef.name];
       if (enabled === false) {
         result[propDef.name] = false;
         continue;
       }
       if (!enabled) continue;
-      // enabled === true: build config object
+      // Build config object from sub-props
       const config: Record<string, unknown> = {};
       for (const sub of propDef.subProps) {
         const val = state[`${propDef.name}.${sub.name}`];
@@ -65,7 +65,15 @@ const assembledProps = computed(() => {
           config[sub.name] = val;
         }
       }
-      result[propDef.name] = Object.keys(config).length > 0 ? config : true;
+      if (propDef.subPropsTarget) {
+        // Sub-props go to a separate prop (e.g., table → tableProps)
+        result[propDef.name] = enabled;
+        if (Object.keys(config).length > 0) {
+          result[propDef.subPropsTarget] = config;
+        }
+      } else {
+        result[propDef.name] = Object.keys(config).length > 0 ? config : true;
+      }
     } else {
       const val = state[propDef.name];
       // Skip undefined and empty strings (no value set)

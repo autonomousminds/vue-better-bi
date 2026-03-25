@@ -19,3 +19,5 @@ export { dataTableProps } from './dataTable';
 export { bigValueProps } from './bigValue';
 export { dualAxisBarChartProps } from './dualAxisBarChart';
 export { productCategoryTableProps } from './productCategoryTable';
+export { barChartWithTableProps } from './barChartWithTable';
+export { productDetailTableProps } from './productDetailTable';

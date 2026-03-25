@@ -1,5 +1,5 @@
 import type { PropDefinition } from '../../types/playground.types';
-import { titleProps, displayProps, formatProps, exportProps, xAxisProps, yAxisProps } from './baseChartProps';
+import { titleProps, displayProps, formatProps, exportProps, xAxisProps, yAxisProps, tableAttachmentProps } from './baseChartProps';
 
 const histogramSpecificProps: PropDefinition[] = [
   { name: 'fillOpacity', label: 'Fill Opacity', control: 'slider', defaultValue: 1, group: 'Histogram Style', min: 0, max: 1, step: 0.05 },
@@ -14,4 +14,5 @@ export const histogramProps: PropDefinition[] = [
   ...yAxisProps,
   ...displayProps,
   ...exportProps,
+  ...tableAttachmentProps,
 ];

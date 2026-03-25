@@ -1,5 +1,5 @@
 import type { PropDefinition } from '../../types/playground.types';
-import { titleProps, displayProps, formatProps, exportProps } from './baseChartProps';
+import { titleProps, displayProps, formatProps, exportProps, tableAttachmentProps } from './baseChartProps';
 
 const boxPlotSpecificProps: PropDefinition[] = [
   { name: 'fillOpacity', label: 'Fill Opacity', control: 'slider', defaultValue: 0.8, group: 'Box Style', min: 0, max: 1, step: 0.05 },
@@ -14,4 +14,5 @@ export const boxPlotProps: PropDefinition[] = [
   ...formatProps,
   ...displayProps,
   ...exportProps,
+  ...tableAttachmentProps,
 ];

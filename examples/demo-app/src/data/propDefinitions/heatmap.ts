@@ -1,5 +1,5 @@
 import type { PropDefinition } from '../../types/playground.types';
-import { formatOptions, colorScaleOptions } from './baseChartProps';
+import { formatOptions, colorScaleOptions, tableAttachmentProps } from './baseChartProps';
 
 export const heatmapProps: PropDefinition[] = [
   { name: 'valueLabels', label: 'Value Labels', control: 'checkbox', defaultValue: true, group: 'Heatmap Style' },
@@ -20,4 +20,5 @@ export const heatmapProps: PropDefinition[] = [
   { name: 'backgroundColor', label: 'Background Color', control: 'color', defaultValue: '', group: 'Display' },
   { name: 'downloadableData', label: 'Downloadable Data', control: 'checkbox', defaultValue: true, group: 'Export' },
   { name: 'downloadableImage', label: 'Downloadable Image', control: 'checkbox', defaultValue: true, group: 'Export' },
+  ...tableAttachmentProps,
 ];

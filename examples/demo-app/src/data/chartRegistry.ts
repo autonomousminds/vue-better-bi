@@ -10,6 +10,8 @@ import {
   bigValueProps,
   dualAxisBarChartProps,
   productCategoryTableProps,
+  barChartWithTableProps,
+  productDetailTableProps,
 } from './propDefinitions';
 
 export const chartRegistry: ChartDefinition[] = [
@@ -200,6 +202,86 @@ export const chartRegistry: ChartDefinition[] = [
     },
   },
   {
+    id: 'product-detail-table', name: 'Product Detail Table', componentName: 'DataTable',
+    category: 'Tables',
+    description: 'Grouped product table with financial columns, bar visualization, subtotals, and accordion grouping',
+    dataBindings: {},
+    supportsReferences: false,
+    props: productDetailTableProps,
+    sampleDataKey: 'productDetail',
+    initialColumnConfigs: {
+      product_category_name: {
+        enabled: true,
+        title: 'Category',
+        align: 'left',
+      },
+      product_name: {
+        enabled: true,
+        title: 'Product',
+        align: 'left',
+      },
+      revenue: {
+        enabled: true,
+        title: 'Revenue',
+        align: 'right',
+        fmt: 'usd0',
+        contentType: 'bar',
+        totalAgg: 'sum',
+        colGroup: 'Financial',
+      },
+      cost: {
+        enabled: true,
+        title: 'Cost',
+        align: 'right',
+        fmt: 'usd0',
+        totalAgg: 'sum',
+        colGroup: 'Financial',
+      },
+      gross_profit: {
+        enabled: true,
+        title: 'Gross Profit',
+        align: 'right',
+        fmt: 'usd0',
+        totalAgg: 'sum',
+        colGroup: 'Financial',
+      },
+      margin_pct: {
+        enabled: true,
+        title: 'Margin',
+        align: 'right',
+        fmt: 'pct1',
+        totalAgg: 'mean',
+        colGroup: 'Financial',
+      },
+      units_sold: {
+        enabled: true,
+        title: 'Units Sold',
+        align: 'right',
+        fmt: 'num0',
+        totalAgg: 'sum',
+        colGroup: 'Volume',
+      },
+    },
+  },
+  {
+    id: 'bar-chart-with-table', name: 'Bar Chart + Table', componentName: 'BarChart',
+    category: 'Compositions',
+    description: 'Bar chart with an attached DataTable showing the underlying data',
+    dataBindings: {
+      x: 'brand_name',
+      y: ['total_sales', 'gross_profit'],
+      tableColumns: [
+        { id: 'brand_name', title: 'Brand', align: 'left' },
+        { id: 'total_sales', title: 'Total Sales', fmt: 'usd0', contentType: 'bar', totalAgg: 'sum', align: 'right', barColor: '#3b82f6' },
+        { id: 'gross_profit', title: 'Gross Profit', fmt: 'usd0', contentType: 'bar', totalAgg: 'sum', align: 'right', barColor: '#60a5fa' },
+        { id: 'profit_margin', title: 'Margin', fmt: 'pct1', contentType: 'colorscale', totalAgg: 'mean', align: 'center', colorScale: ['#fecaca', '#ffffff', '#bbf7d0'] },
+      ] as unknown as string[],
+    },
+    supportsReferences: true,
+    props: barChartWithTableProps,
+    sampleDataKey: 'brandProfitability',
+  },
+  {
     id: 'big-value', name: 'Big Value', componentName: 'BigValue',
     category: 'Values',
     description: 'KPI metric display with optional sparkline and comparison delta',
@@ -218,4 +300,5 @@ export const chartCategories = [
   'Maps',
   'Tables',
   'Values',
+  'Compositions',
 ] as const;

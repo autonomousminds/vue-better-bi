@@ -225,6 +225,69 @@ export const exportProps: PropDefinition[] = [
   },
 ];
 
+export const tableAttachmentProps: PropDefinition[] = [
+  {
+    name: 'table', label: 'Attached Table', control: 'select', defaultValue: '', group: 'Table',
+    options: [
+      { label: 'Off', value: '' },
+      { label: 'Bottom', value: 'bottom' },
+      { label: 'Top', value: 'top' },
+    ],
+    description: 'Attach a DataTable below or above the chart',
+    subPropsTarget: 'tableProps',
+    subProps: [
+      {
+        name: 'rows', label: 'Rows Per Page', control: 'number',
+        defaultValue: 5, group: 'Table', min: 1, max: 100, step: 1,
+      },
+      {
+        name: 'search', label: 'Search', control: 'checkbox',
+        defaultValue: false, group: 'Table',
+      },
+      {
+        name: 'sortable', label: 'Sortable', control: 'checkbox',
+        defaultValue: true, group: 'Table',
+      },
+      {
+        name: 'rowShading', label: 'Row Shading', control: 'checkbox',
+        defaultValue: false, group: 'Table',
+      },
+      {
+        name: 'rowLines', label: 'Row Lines', control: 'checkbox',
+        defaultValue: true, group: 'Table',
+      },
+      {
+        name: 'compact', label: 'Compact', control: 'checkbox',
+        defaultValue: false, group: 'Table',
+      },
+      {
+        name: 'downloadable', label: 'Downloadable', control: 'checkbox',
+        defaultValue: true, group: 'Table',
+      },
+      {
+        name: 'totalRow', label: 'Total Row', control: 'checkbox',
+        defaultValue: false, group: 'Table',
+      },
+      {
+        name: 'headerColor', label: 'Header Color', control: 'color',
+        defaultValue: '', group: 'Table',
+      },
+      {
+        name: 'headerFontColor', label: 'Header Font Color', control: 'color',
+        defaultValue: '', group: 'Table',
+      },
+      {
+        name: 'wrapTitles', label: 'Wrap Titles', control: 'checkbox',
+        defaultValue: false, group: 'Table',
+      },
+      {
+        name: 'formatColumnTitles', label: 'Format Titles', control: 'checkbox',
+        defaultValue: true, group: 'Table',
+      },
+    ],
+  },
+];
+
 export const baseChartPropDefs: PropDefinition[] = [
   ...titleProps,
   ...formatProps,
@@ -236,4 +299,5 @@ export const baseChartPropDefs: PropDefinition[] = [
   ...animationProps,
   ...tooltipProps,
   ...exportProps,
+  ...tableAttachmentProps,
 ];

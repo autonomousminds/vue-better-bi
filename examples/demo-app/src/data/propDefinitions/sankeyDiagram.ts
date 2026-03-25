@@ -1,5 +1,5 @@
 import type { PropDefinition } from '../../types/playground.types';
-import { formatOptions, colorPaletteOptions } from './baseChartProps';
+import { formatOptions, colorPaletteOptions, tableAttachmentProps } from './baseChartProps';
 
 export const sankeyDiagramProps: PropDefinition[] = [
   {
@@ -30,4 +30,5 @@ export const sankeyDiagramProps: PropDefinition[] = [
   { name: 'backgroundColor', label: 'Background Color', control: 'color', defaultValue: '', group: 'Display' },
   { name: 'downloadableData', label: 'Downloadable Data', control: 'checkbox', defaultValue: true, group: 'Export' },
   { name: 'downloadableImage', label: 'Downloadable Image', control: 'checkbox', defaultValue: true, group: 'Export' },
+  ...tableAttachmentProps,
 ];

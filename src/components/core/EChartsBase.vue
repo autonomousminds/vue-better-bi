@@ -8,7 +8,8 @@ import { ref, computed, watch, onMounted, onUnmounted, shallowRef } from 'vue';
 import type { EChartsOption, ECharts } from 'echarts';
 import * as echarts from 'echarts';
 import debounce from 'debounce';
-import type { ChartRenderer } from '../../types';
+import type { ChartRenderer, TablePosition } from '../../types';
+import type { DataTableProps, ColumnProps } from '../../types/table.types';
 import { createEChartsTheme, themeVersion } from '../../themes/echartsThemes';
 import { applySeriesColors, applyEchartsOptions, applySeriesOptions } from '../../composables/useECharts';
 import ChartContainer from './ChartContainer.vue';
@@ -40,6 +41,9 @@ interface Props {
   error?: string | null;
   emptySet?: 'pass' | 'warn' | 'error';
   emptyMessage?: string;
+  table?: boolean | TablePosition;
+  tableProps?: Partial<Omit<DataTableProps, 'data'>>;
+  tableColumns?: ColumnProps[];
   printEchartsConfig?: boolean;
 }
 
@@ -296,6 +300,9 @@ defineExpose({
     :error="props.error"
     :empty-set="props.emptySet"
     :empty-message="props.emptyMessage"
+    :table="props.table"
+    :tableProps="props.tableProps"
+    :tableColumns="props.tableColumns"
     @mouseenter="hovering = true"
     @mouseleave="hovering = false"
   >

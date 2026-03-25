@@ -1,5 +1,5 @@
 import type { PropDefinition } from '../../types/playground.types';
-import { formatOptions, colorScaleOptions } from './baseChartProps';
+import { formatOptions, colorScaleOptions, tableAttachmentProps } from './baseChartProps';
 
 export const calendarHeatmapProps: PropDefinition[] = [
   {
@@ -16,4 +16,5 @@ export const calendarHeatmapProps: PropDefinition[] = [
   { name: 'backgroundColor', label: 'Background Color', control: 'color', defaultValue: '', group: 'Display' },
   { name: 'downloadableData', label: 'Downloadable Data', control: 'checkbox', defaultValue: true, group: 'Export' },
   { name: 'downloadableImage', label: 'Downloadable Image', control: 'checkbox', defaultValue: true, group: 'Export' },
+  ...tableAttachmentProps,
 ];

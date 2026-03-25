@@ -15,6 +15,7 @@ A Vue 3 charting library built on Apache ECharts and Leaflet.js with advanced fo
 - **Export Options**: PNG, JPEG, CSV download and clipboard copy
 - **TypeScript Support**: Full type definitions included
 - **Reference Components**: Add reference lines, areas, and points to charts
+- **Attached Tables**: Add a DataTable above or below any chart with `table="bottom"` — fully configurable with column-level formatting, bar cells, color scales, and more
 
 ## Installation
 ```bash
@@ -983,6 +984,88 @@ For columns where standard aggregations produce meaningless totals (e.g. a perce
 - Arithmetic operators `+ - * / ( )` are supported
 - Formula columns suppress the aggregation label (no "Sum" / "Mean" prefix in the total row)
 - Formulas work in both total rows and subtotal rows (computed per group)
+
+## Attached Table
+
+Any chart component can render a DataTable directly above or below itself using the `table`, `tableProps`, and `tableColumns` props. The table shares the chart's data automatically.
+
+### Basic Usage
+
+```vue
+<!-- Simple: just add table="bottom" to any chart -->
+<BarChart :data="data" x="month" y="sales" table="bottom" />
+
+<!-- Position above the chart instead -->
+<LineChart :data="data" x="day" y="value" table="top" />
+```
+
+### Configuring the Table
+
+Pass any `DataTableProps` via `tableProps` to control the table's behavior and styling:
+
+```vue
+<BarChart
+  :data="data"
+  x="month"
+  y="sales"
+  table="bottom"
+  :tableProps="{
+    rows: 5,
+    search: true,
+    rowShading: true,
+    totalRow: true,
+    headerColor: '#1e3a5f',
+    headerFontColor: '#ffffff',
+    compact: true
+  }"
+/>
+```
+
+### Column-Level Configuration
+
+Use `tableColumns` to define per-column formatting, content types (bar cells, color scales, deltas), alignment, and aggregations. Each entry uses the same `ColumnProps` interface as the `<Column>` component:
+
+```vue
+<script setup>
+import { BarChart } from '@autonomousminds-public/vue-better-bi';
+
+const data = [
+  { brand: 'Contoso', revenue: 2075978, profit: 1164129, margin: 0.56 },
+  { brand: 'Fabrikam', revenue: 1408217, profit: 805671, margin: 0.57 },
+  { brand: 'Proseware', revenue: 1205475, profit: 700565, margin: 0.58 },
+];
+
+const tableColumns = [
+  { id: 'brand', title: 'Brand', align: 'left' },
+  { id: 'revenue', title: 'Revenue', fmt: 'usd0', contentType: 'bar', totalAgg: 'sum', barColor: '#3b82f6' },
+  { id: 'profit', title: 'Profit', fmt: 'usd0', contentType: 'bar', totalAgg: 'sum', barColor: '#60a5fa' },
+  { id: 'margin', title: 'Margin', fmt: 'pct1', contentType: 'colorscale', totalAgg: 'mean', colorScale: ['#fecaca', '#ffffff', '#bbf7d0'] },
+];
+</script>
+
+<template>
+  <BarChart
+    :data="data"
+    x="brand"
+    :y="['revenue', 'profit']"
+    title="Brand Performance"
+    yFmt="usd0"
+    table="bottom"
+    :tableProps="{ search: true, rowShading: true, totalRow: true, headerColor: '#1e3a5f', headerFontColor: '#fff' }"
+    :tableColumns="tableColumns"
+  />
+</template>
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `table` | `boolean \| 'top' \| 'bottom'` | `undefined` | Enable and position the attached table. `true` defaults to `'bottom'`. |
+| `tableProps` | `Partial<DataTableProps>` | `undefined` | Props forwarded to the DataTable (rows, search, sorting, styling, colors, etc.) |
+| `tableColumns` | `ColumnProps[]` | `undefined` | Column definitions forwarded as `<Column>` children. Supports all column content types: `bar`, `colorscale`, `delta`, `sparkline`, `link`, `image`. |
+
+These props are available on every chart component: `BarChart`, `LineChart`, `AreaChart`, `ScatterPlot`, `BubbleChart`, `BoxPlot`, `Histogram`, `FunnelChart`, `PieChart`, `Heatmap`, `CalendarHeatmap`, `SankeyDiagram`, and `WaterfallChart`.
 
 ## BigValue
 

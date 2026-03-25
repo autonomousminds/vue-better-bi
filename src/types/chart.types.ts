@@ -4,6 +4,7 @@
 
 import type { EChartsOption } from 'echarts';
 import type { ColorInput, ColorPaletteInput } from './theme.types';
+import type { DataTableProps, ColumnProps } from './table.types';
 
 export type XAxisType = 'category' | 'value' | 'time';
 export type YAxisType = 'value' | 'log';
@@ -15,6 +16,21 @@ export type StepPosition = 'start' | 'middle' | 'end';
 export type HandleMissing = 'gap' | 'connect' | 'zero';
 export type LabelPosition = 'top' | 'bottom' | 'left' | 'right' | 'inside' | 'outside';
 export type LegendPosition = 'top' | 'bottom' | 'left' | 'right';
+
+// ============================================================================
+// Table Attachment Types
+// ============================================================================
+
+export type TablePosition = 'top' | 'bottom';
+
+export interface TableAttachmentProps {
+  /** Attach a DataTable to the chart. 'top' or 'bottom' sets position; true defaults to 'bottom'. */
+  table?: boolean | TablePosition;
+  /** Props to pass through to the attached DataTable */
+  tableProps?: Partial<Omit<DataTableProps, 'data'>>;
+  /** Column definitions for the attached DataTable (each object is passed as props to a <Column>) */
+  tableColumns?: ColumnProps[];
+}
 
 // ============================================================================
 // Interactive Feature Types
@@ -193,7 +209,7 @@ export interface DataRecord {
   [key: string]: unknown;
 }
 
-export interface BaseChartProps {
+export interface BaseChartProps extends TableAttachmentProps {
   // Data
   data: DataRecord[];
   x?: string;
@@ -400,7 +416,7 @@ export interface HistogramProps extends BaseChartProps {
   bins?: number;
 }
 
-export interface FunnelChartProps {
+export interface FunnelChartProps extends TableAttachmentProps {
   data: DataRecord[];
   name?: string;
   value?: string;
@@ -431,7 +447,7 @@ export interface FunnelChartProps {
 
 export type PieLabelPosition = 'inside' | 'outside';
 
-export interface PieChartProps {
+export interface PieChartProps extends TableAttachmentProps {
   /** Data records array */
   data: DataRecord[];
   /** Column name for slice names. Default: first column */
@@ -482,7 +498,7 @@ export interface PieChartProps {
   backgroundColor?: string;
 }
 
-export interface HeatmapProps {
+export interface HeatmapProps extends TableAttachmentProps {
   data: DataRecord[];
   x: string;
   y: string;
@@ -519,7 +535,7 @@ export interface HeatmapProps {
   backgroundColor?: string;
 }
 
-export interface CalendarHeatmapProps {
+export interface CalendarHeatmapProps extends TableAttachmentProps {
   data: DataRecord[];
   date: string;
   value: string;
@@ -543,7 +559,7 @@ export interface CalendarHeatmapProps {
   backgroundColor?: string;
 }
 
-export interface SankeyDiagramProps {
+export interface SankeyDiagramProps extends TableAttachmentProps {
   data: DataRecord[];
   source?: string;
   target?: string;

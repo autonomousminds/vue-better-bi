@@ -60,7 +60,26 @@ export function useCodeGenerator(
       if (propDef.subProps) {
         // Compound prop
         const enabled = s[propDef.name];
-        if (enabled === false && propDef.defaultValue === true) {
+        if (propDef.subPropsTarget) {
+          // Select-based compound prop (e.g., table → tableProps)
+          if (enabled && enabled !== '' && enabled !== propDef.defaultValue) {
+            propLines.push(`  ${propDef.name}="${enabled}"`);
+            const config: Record<string, unknown> = {};
+            let hasNonDefault = false;
+            for (const sub of propDef.subProps) {
+              const val = s[`${propDef.name}.${sub.name}`];
+              if (val !== sub.defaultValue && val !== undefined && val !== '') {
+                config[sub.name] = val;
+                hasNonDefault = true;
+              }
+            }
+            if (hasNonDefault) {
+              const varName = `${propDef.subPropsTarget}Config`;
+              configVars.push({ name: varName, value: config });
+              propLines.push(`  :${propDef.subPropsTarget}="${varName}"`);
+            }
+          }
+        } else if (enabled === false && propDef.defaultValue === true) {
           propLines.push(`  :${propDef.name}="false"`);
         } else if (enabled === true) {
           const config: Record<string, unknown> = {};

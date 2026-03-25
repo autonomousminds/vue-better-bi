@@ -19,6 +19,8 @@ export interface PropDefinition {
   description?: string;
   showWhen?: (state: Record<string, unknown>) => boolean;
   subProps?: PropDefinition[];
+  /** When set, sub-props are assembled into result[subPropsTarget] instead of result[name] */
+  subPropsTarget?: string;
 }
 
 export interface ColumnConfig {
@@ -48,7 +50,7 @@ export interface ChartDefinition {
   id: string;
   name: string;
   componentName: string;
-  category: 'Standard Charts' | 'Statistical' | 'Part-to-Whole' | 'Relational' | 'Maps' | 'Tables' | 'Values';
+  category: 'Standard Charts' | 'Statistical' | 'Part-to-Whole' | 'Relational' | 'Maps' | 'Tables' | 'Values' | 'Compositions';
   description: string;
   dataBindings: Record<string, string | string[]>;
   supportsReferences: boolean;
