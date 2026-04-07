@@ -49,9 +49,9 @@ const props = withDefaults(defineProps<DataTableProps>(), {
   emptyMessage: 'No data found',
 });
 
-// Resolve effective rows count: "all" means show everything
+// Resolve effective rows count: "all" or 0 means show everything
 const effectiveRows = computed(() => {
-  if (props.rows === 'all') return Infinity;
+  if (props.rows === 'all' || props.rows === 0) return Infinity;
   return props.rows;
 });
 
@@ -650,7 +650,7 @@ function handleExportCsv() {
               :row-numbers="rowNumbers"
               :row-lines="rowLines"
               :compact="compact"
-              :index="(currentPage - 1) * effectiveRows"
+              :index="isPaginated ? (currentPage - 1) * effectiveRows : 0"
             />
           </template>
 
