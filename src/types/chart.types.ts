@@ -358,6 +358,7 @@ export interface AreaChartProps extends BaseChartProps {
   lineColor?: ColorInput;
   lineType?: LineType;
   lineWidth?: number;
+  smooth?: boolean;
   markers?: boolean;
   markerShape?: MarkerShape;
   markerSize?: number;

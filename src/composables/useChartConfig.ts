@@ -631,6 +631,8 @@ export function getSeriesConfig(
     seriesOrder?: string[];
     seriesLabelFmt?: string;
     fillMissingData?: boolean;
+    /** Sort series by total value (descending) for stacked charts so the largest, most stable series sit at the bottom of the stack. */
+    stackSortByValue?: boolean;
   } = {}
 ): SeriesConfig[] {
   const {
@@ -640,7 +642,8 @@ export function getSeriesConfig(
     y2,
     seriesOrder,
     seriesLabelFmt,
-    fillMissingData = false
+    fillMissingData = false,
+    stackSortByValue = false
   } = options;
 
   const seriesConfigs: SeriesConfig[] = [];
@@ -775,7 +778,21 @@ export function getSeriesConfig(
     });
   }
 
-  // Apply series order
+  // Sort stacked series by descending total value so the largest series sit at
+  // the bottom of the stack (Evidence.dev approach — prevents mid-stack inversions).
+  if (stackSortByValue && !seriesOrder) {
+    const yIdx = swapXY ? 0 : 1;
+    const totals = new Map(seriesConfigs.map(s => [
+      s,
+      (s.data as unknown[][]).reduce((acc, pt) => {
+        const v = pt[yIdx];
+        return acc + (typeof v === 'number' ? v : 0);
+      }, 0),
+    ]));
+    seriesConfigs.sort((a, b) => totals.get(b)! - totals.get(a)!);
+  }
+
+  // Apply series order (explicit override)
   if (seriesOrder) {
     seriesConfigs.sort((a, b) => seriesOrder.indexOf(a.name) - seriesOrder.indexOf(b.name));
   }

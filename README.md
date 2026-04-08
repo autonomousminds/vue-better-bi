@@ -478,6 +478,22 @@ In addition to common props, axis props, and formatting props:
 />
 ```
 
+### AreaChart Props
+
+In addition to common props, axis props, and formatting props:
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `type` | `'stacked' \| 'stacked100'` | `'stacked'` | Stack type |
+| `smooth` | `boolean` | `true` | Smooth curved area boundaries (uses spline interpolation for gap-free stacked areas) |
+| `fillOpacity` | `number` | `0.85` | Area fill opacity (0–1) |
+| `lineWidth` | `number` | `0` | Border line width (0 hides lines) |
+| `lineType` | `'solid' \| 'dashed' \| 'dotted'` | `'solid'` | Border line style |
+| `handleMissing` | `'gap' \| 'connect' \| 'zero'` | `'gap'` | How to handle missing values |
+| `markers` | `boolean` | `false` | Show data point markers |
+| `labels` | `boolean` | `false` | Show data labels |
+| `step` | `boolean` | `false` | Step interpolation instead of linear |
+
 ### FunnelChart Props
 
 | Prop | Type | Default | Description |

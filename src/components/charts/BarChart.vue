@@ -265,7 +265,8 @@ const seriesData = computed(() => {
       y2: effectiveY2.value,
       seriesOrder: props.seriesOrder,
       seriesLabelFmt: props.seriesLabelFmt,
-      fillMissingData: isStacked.value
+      fillMissingData: isStacked.value,
+      stackSortByValue: isStacked.value && !!props.series
     }
   );
 

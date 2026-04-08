@@ -15,12 +15,14 @@ import { useInteractiveFeatures } from '../../composables/useInteractiveFeatures
 import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
 import { getStackPercentages } from '../../utils/getStackPercentages';
 import { getCompletedData, replaceNulls } from '../../utils/getCompletedData';
+import { interpolateSeriesData } from '../../utils/splineInterpolation';
 
 const props = withDefaults(defineProps<AreaChartProps>(), {
   type: 'stacked',
-  fillOpacity: 0.7,
+  fillOpacity: 0.85,
   lineType: 'solid',
-  lineWidth: 2,
+  lineWidth: 0,
+  smooth: true,
   markers: false,
   markerShape: 'circle',
   markerSize: 8,
@@ -156,25 +158,41 @@ const stepMap = {
   end: 'end'
 } as const;
 
+// For stacked + smooth charts we pre-interpolate the data with a monotone cubic
+// spline so that all series share identical x-positions.  This lets us set
+// `smooth: false` in ECharts (straight lines between the dense points) which
+// guarantees adjacent stack boundaries align perfectly — no white gaps.
+const usePreInterpolation = computed(() =>
+  isStacked.value && props.smooth && !props.step
+);
+
 // Build area series configuration
 const areaSeriesConfig = computed<Partial<SeriesConfig>>(() => {
+  const hideLines = props.lineWidth === 0;
+  // When pre-interpolating we disable ECharts' own smooth to avoid double-smoothing
+  const smoothValue = usePreInterpolation.value
+    ? false
+    : (props.smooth === true ? 0.4 : props.smooth);
   return {
     type: 'line',
     stack: 'total',
-    smooth: false,
+    smooth: smoothValue,
     step: props.step ? stepMap[props.stepPosition || 'middle'] : false,
     connectNulls: props.handleMissing === 'connect',
     areaStyle: {
-      color: fillColorResolved.value,
+      ...(fillColorResolved.value ? { color: fillColorResolved.value } : {}),
       opacity: props.fillOpacity
     },
     lineStyle: {
-      color: lineColorResolved.value,
+      ...(lineColorResolved.value ? { color: lineColorResolved.value } : {}),
       width: props.lineWidth,
-      type: lineTypeMap[props.lineType || 'solid']
+      type: lineTypeMap[props.lineType || 'solid'],
+      ...(hideLines ? { opacity: 0 } : {})
     },
     itemStyle: {
-      color: lineColorResolved.value || fillColorResolved.value
+      ...(lineColorResolved.value || fillColorResolved.value
+        ? { color: lineColorResolved.value || fillColorResolved.value }
+        : {})
     },
     symbol: props.markers ? props.markerShape : 'none',
     symbolSize: props.markers ? props.markerSize : 0,
@@ -235,9 +253,20 @@ const seriesData = computed(() => {
       y2: props.y2,
       seriesOrder: props.seriesOrder,
       seriesLabelFmt: props.seriesLabelFmt,
-      fillMissingData: !!props.series && (props.type === 'stacked' || props.type === 'stacked100')
+      fillMissingData: !!props.series && (props.type === 'stacked' || props.type === 'stacked100'),
+      stackSortByValue: isStacked.value && !!props.series
     }
   );
+
+  // Pre-interpolate stacked series so all share identical x-positions (no gaps)
+  if (usePreInterpolation.value) {
+    for (let i = 0; i < allSeries.length; i++) {
+      const s = allSeries[i];
+      if (s.stack && s.data) {
+        allSeries[i] = { ...s, data: interpolateSeriesData(s.data as unknown[][], 8) };
+      }
+    }
+  }
 
   // Apply y2SeriesType: change y2 series to the specified type (default: 'line')
   if (props.y2) {
