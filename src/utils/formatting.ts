@@ -301,7 +301,7 @@ function applyFormatting(
         if (columnFormat.valueType === 'date' && typeof value === 'string') {
           typedValue = new Date(standardizeDateString(value));
         } else if (value instanceof Date) {
-          typedValue = new Date(value.toISOString().slice(0, -1));
+          typedValue = value;
         } else if (
           columnFormat.valueType === 'number' &&
           typeof value !== 'number' &&
