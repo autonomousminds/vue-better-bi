@@ -422,7 +422,7 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
   margin-top: auto;
   padding-top: 0.375rem;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.75rem;
   position: relative;
 }
