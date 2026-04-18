@@ -372,6 +372,7 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
   margin-right: 0.75rem;
   vertical-align: top;
   max-width: 100%;
+  height: 100%;
   overflow-wrap: break-word;
   word-break: break-word;
 }
