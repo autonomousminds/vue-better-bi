@@ -363,7 +363,8 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
 
 <style scoped>
 .big-value {
-  display: inline-block;
+  display: inline-flex;
+  flex-direction: column;
   font-family: sans-serif;
   padding-top: 0.5rem;
   padding-bottom: 0.75rem;
@@ -415,7 +416,8 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
 .big-value-main {
   font-size: 1.25rem;
   font-weight: 500;
-  margin-top: 0.375rem;
+  margin-top: auto;
+  padding-top: 0.375rem;
   display: flex;
   align-items: baseline;
   gap: 0.75rem;
@@ -434,6 +436,7 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
 .big-value-comparison {
   font-size: 0.75rem;
   margin-top: 0.25rem;
+  flex-shrink: 0;
 }
 
 .big-value-comparison--clickable {
