@@ -380,7 +380,7 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
 .big-value-title-icon {
   width: 35px;
   height: 35px;
-  margin: 0 0 4px;
+  margin: 0 0 10px;
   display: block;
   flex-shrink: 0;
 }
