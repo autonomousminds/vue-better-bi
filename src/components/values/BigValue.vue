@@ -380,8 +380,9 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
 .big-value-title-icon {
   width: 35px;
   height: 35px;
-  margin: 0 0 20px;
+  margin: 0 0 4px;
   display: block;
+  flex-shrink: 0;
 }
 
 .big-value-title,
@@ -389,6 +390,7 @@ watch([resolvedTitle, () => props.subtitle], () => nextTick(checkTruncation));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .big-value-title.is-truncated,
