@@ -474,9 +474,10 @@ export function useChartConfig(
             show: props.xAxisLabels !== false,
             hideOverlap: true,
             rotate: props.xAxisLabelRotate || undefined,
-            formatter: xAxisType.value === 'time' || xAxisType.value === 'category'
+            // Skip only on 'time' axes — ECharts' time axis has its own date-aware formatter.
+            formatter: xAxisType.value === 'time'
               ? undefined
-              : (value: number) => formatAxisValue(value, formats.value.x, unitSummaries.value.x)
+              : (value: unknown) => formatAxisValue(value, formats.value.x, unitSummaries.value.x)
           },
           name: xAxisTitle,
           nameLocation: 'middle' as const,
