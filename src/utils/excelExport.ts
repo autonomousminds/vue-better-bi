@@ -85,6 +85,19 @@ function estimateColumnWidth(
 }
 
 /**
+ * ExcelJS converts Date → Excel serial via raw getTime() (UTC ms) with no TZ
+ * adjustment. Our Date objects come from ISO strings parsed as local time
+ * (Z stripped upstream), so for users east of UTC, getTime() points at the
+ * previous calendar day. Shift so UTC components match local components.
+ */
+function toExcelSafeDate(val: unknown): unknown {
+  if (val instanceof Date && !isNaN(val.getTime())) {
+    return new Date(val.getTime() - val.getTimezoneOffset() * 60000);
+  }
+  return val;
+}
+
+/**
  * Exports data to an Excel (.xlsx) file and triggers download.
  */
 export async function exportToXlsx(options: ExcelExportOptions): Promise<void> {
@@ -170,7 +183,7 @@ export async function exportToXlsx(options: ExcelExportOptions): Promise<void> {
 
       // Data rows with outline level (collapsible in Excel)
       for (const row of groupRows) {
-        const dataRow = worksheet.addRow(columns.map((col) => row[col.id] ?? ''));
+        const dataRow = worksheet.addRow(columns.map((col) => toExcelSafeDate(row[col.id]) ?? ''));
         dataRow.outlineLevel = 1;
 
         // Apply number formats
@@ -206,7 +219,7 @@ export async function exportToXlsx(options: ExcelExportOptions): Promise<void> {
   } else {
     // Ungrouped export
     for (const row of data) {
-      const dataRow = worksheet.addRow(columns.map((col) => row[col.id] ?? ''));
+      const dataRow = worksheet.addRow(columns.map((col) => toExcelSafeDate(row[col.id]) ?? ''));
 
       columns.forEach((col, idx) => {
         const numFmt = getNumFmt(col, columnSummary);
