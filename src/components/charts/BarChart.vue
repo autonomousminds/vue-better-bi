@@ -12,6 +12,7 @@ import ChartFooter from '../core/ChartFooter.vue';
 import { useChartConfig, getSeriesConfig, getDistinctCount } from '../../composables/useChartConfig';
 import { useThemeStores } from '../../composables/useTheme';
 import { useInteractiveFeatures } from '../../composables/useInteractiveFeatures';
+import { useTooltipHoverHighlight } from '../../composables/useTooltipHoverHighlight';
 import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
 import { getStackPercentages } from '../../utils/getStackPercentages';
 import { getCompletedData, replaceNulls } from '../../utils/getCompletedData';
@@ -84,6 +85,8 @@ const y2AxisColorResolved = computed(() =>
   props.y2AxisColor ? resolveColor(props.y2AxisColor).value : undefined
 );
 
+const { activeSeriesName, onChartInit: onHoverHighlightInit } = useTooltipHoverHighlight();
+
 // Process chart configuration
 const {
   processedData: rawProcessedData,
@@ -97,7 +100,8 @@ const {
   stacked100: props.type === 'stacked100',
   resolvedColorPalette: () => colorPaletteResolved.value,
   resolvedYAxisColor: () => yAxisColorResolved.value,
-  resolvedY2AxisColor: () => y2AxisColorResolved.value
+  resolvedY2AxisColor: () => y2AxisColorResolved.value,
+  getActiveSeriesName: () => activeSeriesName.value
 });
 
 // Derive the y-columns list (needed for data transforms)
@@ -449,6 +453,7 @@ let chartInstanceRef: ECharts | null = null;
 
 function onChartInit(chart: ECharts) {
   chartInstanceRef = chart;
+  onHoverHighlightInit(chart);
 }
 </script>
 

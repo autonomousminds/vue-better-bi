@@ -62,6 +62,12 @@ export interface TooltipOptions {
    * Custom tooltip title column
    */
   tooltipTitle?: string;
+
+  /**
+   * Returns the series name currently under the cursor (for axis-trigger
+   * multi-series tooltips). When set, the matching row is visually emphasized.
+   */
+  getActiveSeriesName?: () => string | null;
 }
 
 export interface TooltipFormatterReturn {
@@ -115,8 +121,10 @@ export function useTooltip(): TooltipFormatterReturn {
       xColumn = 'x',
       xFormat,
       yFormat,
-      y2Format
+      y2Format,
+      getActiveSeriesName
     } = options;
+    const activeName = getActiveSeriesName ? getActiveSeriesName() : null;
 
     // Handle array of params
     const paramsArray = Array.isArray(params) ? params : [params];
@@ -138,9 +146,9 @@ export function useTooltip(): TooltipFormatterReturn {
           const yVal = paramValue?.[swapXY ? 0 : 1];
           const yAxisIndex = getYAxisIndex(param.componentIndex || 0, yCount, y2Count);
           const format = yAxisIndex === 0 ? yFormat : y2Format;
-
-          output += `<br> <span style='font-size: 11px;'>${param.marker} ${param.seriesName}</span>`;
-          output += `<span style='float:right; margin-left: 10px; font-size: 12px;'>${formatValue(yVal, format)}</span>`;
+          const weight = activeName !== null && param.seriesName === activeName ? 600 : 400;
+          output += `<br> <span style='font-size: 11px; font-weight: ${weight};'>${param.marker} ${param.seriesName}</span>`;
+          output += `<span style='float:right; margin-left: 10px; font-size: 12px; font-weight: ${weight};'>${formatValue(yVal, format)}</span>`;
         }
       }
     } else if (xType === 'value') {

@@ -246,6 +246,7 @@ interface ChartConfigExtraOptions {
   resolvedColorPalette?: () => string[] | undefined;
   resolvedYAxisColor?: () => unknown;
   resolvedY2AxisColor?: () => unknown;
+  getActiveSeriesName?: () => string | null;
 }
 
 export function useChartConfig(
@@ -581,7 +582,8 @@ export function useChartConfig(
       xFormat: formats.value.x,
       yFormat: formats.value.y,
       y2Format: formats.value.y2,
-      tooltipTitle: props.tooltipTitle
+      tooltipTitle: props.tooltipTitle,
+      getActiveSeriesName: options.getActiveSeriesName
     });
 
     return {

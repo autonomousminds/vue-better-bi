@@ -11,7 +11,9 @@ import EChartsBase from '../core/EChartsBase.vue';
 import ChartFooter from '../core/ChartFooter.vue';
 import { useChartConfig, getSeriesConfig } from '../../composables/useChartConfig';
 import { useThemeStores } from '../../composables/useTheme';
+import { getRotatedLineType } from '../../themes/seriesRotation';
 import { useInteractiveFeatures } from '../../composables/useInteractiveFeatures';
+import { useTooltipHoverHighlight } from '../../composables/useTooltipHoverHighlight';
 import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
 import { getStackPercentages } from '../../utils/getStackPercentages';
 import { getCompletedData, replaceNulls } from '../../utils/getCompletedData';
@@ -80,6 +82,8 @@ const y2AxisColorResolved = computed(() =>
   props.y2AxisColor ? resolveColor(props.y2AxisColor).value : undefined
 );
 
+const { activeSeriesName, onChartInit } = useTooltipHoverHighlight();
+
 // Process chart configuration
 const {
   processedData: rawProcessedData,
@@ -93,7 +97,8 @@ const {
   stacked100: props.type === 'stacked100',
   resolvedColorPalette: () => colorPaletteResolved.value,
   resolvedYAxisColor: () => yAxisColorResolved.value,
-  resolvedY2AxisColor: () => y2AxisColorResolved.value
+  resolvedY2AxisColor: () => y2AxisColorResolved.value,
+  getActiveSeriesName: () => activeSeriesName.value
 });
 
 // Derive the y-columns list (needed for data transforms)
@@ -179,6 +184,7 @@ const areaSeriesConfig = computed<Partial<SeriesConfig>>(() => {
     smooth: smoothValue,
     step: props.step ? stepMap[props.stepPosition || 'middle'] : false,
     connectNulls: props.handleMissing === 'connect',
+    triggerLineEvent: true,
     areaStyle: {
       ...(fillColorResolved.value ? { color: fillColorResolved.value } : {}),
       opacity: props.fillOpacity
@@ -284,6 +290,19 @@ const seriesData = computed(() => {
     }
   }
 
+  // Auto-rotate dash pattern per series once the palette wraps so colors that
+  // repeat (e.g. series 0 and series 10) remain visually distinguishable.
+  // Areas don't show markers, so we only vary lineStyle.type.
+  const paletteLength = colorPaletteResolved.value?.length ?? 0;
+  if (paletteLength > 0 && allSeries.length > paletteLength) {
+    for (let i = 0; i < allSeries.length; i++) {
+      const rotatedType = getRotatedLineType(i, paletteLength);
+      if (rotatedType) {
+        allSeries[i].lineStyle = { ...allSeries[i].lineStyle, type: rotatedType };
+      }
+    }
+  }
+
   return allSeries;
 });
 
@@ -375,6 +394,7 @@ const hovering = ref(false);
     :tableProps="props.tableProps"
     :tableColumns="props.tableColumns"
     @click="emit('click', $event)"
+    @init="onChartInit"
     @mouseenter="hovering = true"
     @mouseleave="hovering = false"
   >

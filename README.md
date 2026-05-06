@@ -321,6 +321,17 @@ configureThemes({
 });
 ```
 
+### Series-Style Rotation
+
+When a line or area chart has more series than the active palette has colors,
+the dash pattern (`solid → dashed → dotted`) and marker shape (`circle → rect →
+triangle → diamond → pin → arrow`) automatically rotate per palette wrap. So
+series 1 and series 11 share a color but stay visually distinct.
+
+This kicks in only past the wrap — series 1–10 keep whatever `lineType` /
+`markerShape` you set chart-wide. To opt out entirely, set `lineType` and
+`markerShape` explicitly on the chart.
+
 ## Props Reference
 
 ### Common Props

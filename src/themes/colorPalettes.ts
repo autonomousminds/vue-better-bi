@@ -150,16 +150,16 @@ export function setColorOpacity(color: string, opacity: number): string {
  */
 export const namedPalettes: Record<string, string[]> = {
   default: [
-    '#236aa4',
-    '#45a1bf',
-    '#a5cdee',
-    '#8dacbf',
-    '#85c7c6',
-    '#d2c6ac',
-    '#f4b548',
-    '#8f3d56',
-    '#71b9f4',
-    '#46a485'
+    '#557ca7',
+    '#e98a2e',
+    '#d5525a',
+    '#80b9b2',
+    '#66a14f',
+    '#e9c74c',
+    '#aa7aa0',
+    '#f79ba8',
+    '#98745e',
+    '#b9b0ab'
   ],
   categorical: [
     '#3366cc',

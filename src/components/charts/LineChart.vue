@@ -11,7 +11,9 @@ import EChartsBase from '../core/EChartsBase.vue';
 import ChartFooter from '../core/ChartFooter.vue';
 import { useChartConfig, getSeriesConfig } from '../../composables/useChartConfig';
 import { useThemeStores } from '../../composables/useTheme';
+import { getRotatedLineType, getRotatedMarkerShape } from '../../themes/seriesRotation';
 import { useInteractiveFeatures } from '../../composables/useInteractiveFeatures';
+import { useTooltipHoverHighlight } from '../../composables/useTooltipHoverHighlight';
 import { formatValue, getFormatObjectFromString } from '../../utils/formatting';
 import { getCompletedData } from '../../utils/getCompletedData';
 
@@ -75,6 +77,8 @@ const y2AxisColorResolved = computed(() =>
   props.y2AxisColor ? resolveColor(props.y2AxisColor).value : undefined
 );
 
+const { activeSeriesName, onChartInit } = useTooltipHoverHighlight();
+
 // Process chart configuration
 // Note: We pass props directly (not spread) to maintain Vue reactivity
 const {
@@ -88,7 +92,8 @@ const {
   chartType: 'Line Chart',
   resolvedColorPalette: () => colorPaletteResolved.value,
   resolvedYAxisColor: () => yAxisColorResolved.value,
-  resolvedY2AxisColor: () => y2AxisColorResolved.value
+  resolvedY2AxisColor: () => y2AxisColorResolved.value,
+  getActiveSeriesName: () => activeSeriesName.value
 });
 
 // Map line type to ECharts format
@@ -216,6 +221,25 @@ const seriesData = computed(() => {
     }
   }
 
+  // Auto-rotate dash pattern + marker shape per series once the palette wraps,
+  // so series sharing a color (e.g. series 0 and series 10) remain distinguishable.
+  const paletteLength = colorPaletteResolved.value?.length ?? 0;
+  if (paletteLength > 0 && allSeries.length > paletteLength) {
+    for (let i = 0; i < allSeries.length; i++) {
+      if (allSeries[i].type === 'bar') continue;
+      const rotatedType = getRotatedLineType(i, paletteLength);
+      if (rotatedType) {
+        allSeries[i].lineStyle = { ...allSeries[i].lineStyle, type: rotatedType };
+      }
+      if (props.markers) {
+        const rotatedShape = getRotatedMarkerShape(i, paletteLength);
+        if (rotatedShape) {
+          allSeries[i].symbol = rotatedShape;
+        }
+      }
+    }
+  }
+
   return allSeries;
 });
 
@@ -308,6 +332,7 @@ const hovering = ref(false);
     :tableProps="props.tableProps"
     :tableColumns="props.tableColumns"
     @click="emit('click', $event)"
+    @init="onChartInit"
     @mouseenter="hovering = true"
     @mouseleave="hovering = false"
   >

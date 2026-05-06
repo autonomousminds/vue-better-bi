@@ -242,7 +242,8 @@ function sortClick(column: string) {
   if (sortState.value.col === column) {
     sortState.value = { col: column, ascending: !sortState.value.ascending };
   } else {
-    sortState.value = { col: column, ascending: true };
+    const colType = columnSummary.value.find((c) => c.id === column)?.type;
+    sortState.value = { col: column, ascending: colType !== 'number' };
   }
 }
 
@@ -345,6 +346,24 @@ function groupTruncatedCount(groupName: string): number {
   const limit = groupRowLimits.value[groupName] ?? GROUP_ROW_LIMIT;
   return Math.max(0, data.length - limit);
 }
+
+// For section grouping: walk sortedData and create runs of consecutive same-group rows.
+// This lets section grouping respect the active sort: rows from different groups can interleave,
+// and the group-name cell uses rowSpan only across consecutive same-group rows (Excel-style).
+const sectionRuns = computed<{ groupName: string; rows: Record<string, unknown>[] }[]>(() => {
+  if (!props.groupBy) return [];
+  const runs: { groupName: string; rows: Record<string, unknown>[] }[] = [];
+  for (const row of sortedData.value) {
+    const groupName = String(row[props.groupBy] ?? '');
+    const last = runs[runs.length - 1];
+    if (last && last.groupName === groupName) {
+      last.rows.push(row);
+    } else {
+      runs.push({ groupName, rows: [row] });
+    }
+  }
+  return runs;
+});
 
 // Sort group names
 const sortedGroupNames = computed(() => {
@@ -558,9 +577,9 @@ function handleExportCsv() {
         <tbody>
           <!-- Grouped mode -->
           <template v-if="groupBy && Object.keys(groupedData).length > 0 && !debouncedSearchValue">
-            <template v-for="groupName in sortedGroupNames" :key="groupName">
-              <!-- Accordion mode -->
-              <template v-if="groupType === 'accordion'">
+            <!-- Accordion mode (bucketed by group) -->
+            <template v-if="groupType === 'accordion'">
+              <template v-for="groupName in sortedGroupNames" :key="groupName">
                 <GroupRow
                   :group-name="groupName"
                   :current-group-data="groupedData[groupName]"
@@ -603,15 +622,17 @@ function handleExportCsv() {
                   </td>
                 </tr>
               </template>
+            </template>
 
-              <!-- Section mode -->
-              <template v-else-if="groupType === 'section'">
+            <!-- Section mode (uses runs so global sort interleaves rows across groups) -->
+            <template v-else-if="groupType === 'section'">
+              <template v-for="(run, runIdx) in sectionRuns" :key="run.groupName + '-' + runIdx">
                 <TableRow
-                  :displayed-data="getVisibleGroupData(groupName)"
+                  :displayed-data="run.rows"
                   :ordered-columns="orderedColumns"
                   :column-summary="columnSummary"
                   :group-type="groupType"
-                  :row-span="getVisibleGroupData(groupName).length"
+                  :row-span="run.rows.length"
                   :row-shading="rowShading"
                   :link="link"
                   :row-numbers="rowNumbers"
@@ -624,8 +645,8 @@ function handleExportCsv() {
                 />
                 <SubtotalRow
                   v-if="subtotals"
-                  :group-name="groupName"
-                  :current-group-data="groupedData[groupName]"
+                  :group-name="run.groupName"
+                  :current-group-data="run.rows"
                   :column-summary="columnSummary"
                   :row-color="subtotalRowColor"
                   :font-color="subtotalFontColor"

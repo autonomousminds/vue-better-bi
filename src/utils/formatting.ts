@@ -315,6 +315,12 @@ function applyFormatting(
         typedValue = value;
       }
 
+      // If number coercion produced NaN (non-numeric input given a numeric format),
+      // fall through to the default fallback rather than rendering "NaN".
+      if (typeof typedValue === 'number' && Number.isNaN(typedValue) && typeof value !== 'number') {
+        return String(value);
+      }
+
       if (isAutoFormat(columnFormat, formattingCode)) {
         try {
           return autoFormat(typedValue as number, columnFormat, columnUnitSummary);
