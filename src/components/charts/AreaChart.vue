@@ -94,7 +94,7 @@ const {
   unitSummaries
 } = useChartConfig(props, {
   chartType: 'Area Chart',
-  stacked100: props.type === 'stacked100',
+  stacked100: () => props.type === 'stacked100',
   resolvedColorPalette: () => colorPaletteResolved.value,
   resolvedYAxisColor: () => yAxisColorResolved.value,
   resolvedY2AxisColor: () => y2AxisColorResolved.value,

@@ -68,6 +68,17 @@ export interface TooltipOptions {
    * multi-series tooltips). When set, the matching row is visually emphasized.
    */
   getActiveSeriesName?: () => string | null;
+
+  /**
+   * When true, y-values are already fractional shares (0–1) and should be
+   * rendered with percentFormat instead of yFormat.
+   */
+  stacked100?: boolean;
+
+  /**
+   * Format used for percentage y-values when stacked100 is true.
+   */
+  percentFormat?: FormatObject;
 }
 
 export interface TooltipFormatterReturn {
@@ -122,8 +133,11 @@ export function useTooltip(): TooltipFormatterReturn {
       xFormat,
       yFormat,
       y2Format,
+      stacked100 = false,
+      percentFormat,
       getActiveSeriesName
     } = options;
+    const yDisplayFormat = stacked100 ? percentFormat : yFormat;
     const activeName = getActiveSeriesName ? getActiveSeriesName() : null;
 
     // Handle array of params
@@ -145,7 +159,7 @@ export function useTooltip(): TooltipFormatterReturn {
           const paramValue = param.value as unknown[] | undefined;
           const yVal = paramValue?.[swapXY ? 0 : 1];
           const yAxisIndex = getYAxisIndex(param.componentIndex || 0, yCount, y2Count);
-          const format = yAxisIndex === 0 ? yFormat : y2Format;
+          const format = yAxisIndex === 0 ? yDisplayFormat : y2Format;
           const weight = activeName !== null && param.seriesName === activeName ? 600 : 400;
           output += `<br> <span style='font-size: 11px; font-weight: ${weight};'>${param.marker} ${param.seriesName}</span>`;
           output += `<span style='float:right; margin-left: 10px; font-size: 12px; font-weight: ${weight};'>${formatValue(yVal, format)}</span>`;
@@ -161,7 +175,7 @@ export function useTooltip(): TooltipFormatterReturn {
       output = `<span id="tooltip" style='font-weight: 600;'>${formatTitle(xColumn, xFormat)}: </span>`;
       output += `<span style='float:right; margin-left: 10px;'>${formatValue(xValLocal, xFormat)}</span><br/>`;
       output += `<span style='font-weight: 600;'>${formatTitle(yCol, yFormat)}: </span>`;
-      output += `<span style='float:right; margin-left: 10px;'>${formatValue(yVal, yFormat)}</span>`;
+      output += `<span style='float:right; margin-left: 10px;'>${formatValue(yVal, yDisplayFormat)}</span>`;
     } else {
       // Single series with categorical or date x-axis
       const valueArr = paramsArray[0].value as unknown[] | undefined;
@@ -171,7 +185,7 @@ export function useTooltip(): TooltipFormatterReturn {
 
       output = `<span id="tooltip" style='font-weight: 600;'>${formatValue(xValLocal, xFormat)}</span><br/>`;
       output += `<span>${formatTitle(yCol, yFormat)}: </span>`;
-      output += `<span style='float:right; margin-left: 10px;'>${formatValue(yVal, yFormat)}</span>`;
+      output += `<span style='float:right; margin-left: 10px;'>${formatValue(yVal, yDisplayFormat)}</span>`;
     }
 
     return output;

@@ -241,7 +241,9 @@ export function getSortedData(
  */
 interface ChartConfigExtraOptions {
   chartType?: string;
-  stacked100?: boolean;
+  /** Reactive getter — props.type can change after mount when the BarChart
+   *  component instance is reused across chart switches. */
+  stacked100?: () => boolean;
   xType?: string;
   resolvedColorPalette?: () => string[] | undefined;
   resolvedYAxisColor?: () => unknown;
@@ -253,8 +255,8 @@ export function useChartConfig(
   props: BaseChartProps,
   options: ChartConfigExtraOptions = {}
 ): UseChartConfigReturn {
-  // Extract options (chartType and stacked100 reserved for future use)
-  const { xType: overrideXType, resolvedColorPalette: getColorPalette, resolvedYAxisColor: getYAxisColor, resolvedY2AxisColor: getY2AxisColor } = options;
+  // Extract options (chartType reserved for future use)
+  const { xType: overrideXType, stacked100: getStacked100, resolvedColorPalette: getColorPalette, resolvedYAxisColor: getYAxisColor, resolvedY2AxisColor: getY2AxisColor } = options;
   // Process data
   const processedData = computed(() => {
     let data = [...(props.data || [])];
@@ -571,6 +573,10 @@ export function useChartConfig(
     }
 
     // Tooltip config
+    const isStacked100Now = !!getStacked100?.();
+    const percentFormat = isStacked100Now
+      ? getFormatObjectFromString(props.percentFmt || 'pct1')
+      : undefined;
     const tooltipConfig = createTooltipConfig({
       swapXY,
       xType: xAxisType.value,
@@ -582,6 +588,8 @@ export function useChartConfig(
       xFormat: formats.value.x,
       yFormat: formats.value.y,
       y2Format: formats.value.y2,
+      stacked100: isStacked100Now,
+      percentFormat,
       tooltipTitle: props.tooltipTitle,
       getActiveSeriesName: options.getActiveSeriesName
     });

@@ -227,6 +227,7 @@ export interface BaseChartProps extends TableAttachmentProps {
   labelFmt?: string;
   yLabelFmt?: string;
   y2LabelFmt?: string;
+  percentFmt?: string;
 
   // Titles
   title?: string;

@@ -29,8 +29,7 @@ const UNIT_LEVELS: { unit: string; divisor: number; commas: number; suffix: stri
  * This ensures all values in a column use the same unit — e.g., if the median is 600k,
  * a `num0m` format code gets rewritten to `num0k` so all values show "Xk" consistently.
  *
- * Uses the same thresholds as Evidence's getAutoColumnUnit:
- *   >= 5T → T, >= 5B → B, >= 5M → M, >= 5k → k, else no unit
+ * Thresholds: >= 1T → T, >= 1B → B, >= 1M → M, >= 1k → k, else no unit
  */
 function getMedianAdjustedFormatCode(
   formatCode: string,
@@ -43,11 +42,11 @@ function getMedianAdjustedFormatCode(
   const oldSuffix = suffixMatch[0];
   const baseCode = formatCode.slice(0, -oldSuffix.length); // e.g., "#,##0" or "$#,##0.00"
 
-  // Determine the right unit based on median (same thresholds as Evidence's getAutoColumnUnit)
+  // Determine the right unit based on median
   const absMedian = Math.abs(median);
   let targetLevel: typeof UNIT_LEVELS[number] | null = null;
   for (const level of UNIT_LEVELS) {
-    if (absMedian >= level.divisor * 5) {
+    if (absMedian >= level.divisor) {
       targetLevel = level;
       break;
     }

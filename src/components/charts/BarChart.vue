@@ -97,7 +97,7 @@ const {
   unitSummaries
 } = useChartConfig(props, {
   chartType: 'Bar Chart',
-  stacked100: props.type === 'stacked100',
+  stacked100: () => props.type === 'stacked100',
   resolvedColorPalette: () => colorPaletteResolved.value,
   resolvedYAxisColor: () => yAxisColorResolved.value,
   resolvedY2AxisColor: () => y2AxisColorResolved.value,
@@ -232,6 +232,9 @@ const barSeriesConfig = computed<Partial<SeriesConfig>>(() => {
         const value = props.swapXY ? params.value[0] : params.value[1];
         if (value === 0 || value == null) return '';
         const isY2 = seriesData.value[params.seriesIndex]?.yAxisIndex === 1;
+        if (props.type === 'stacked100' && !isY2) {
+          return formatValue(value, getFormatObjectFromString(props.percentFmt || 'pct1'));
+        }
         const labelFmt = isY2
           ? props.y2LabelFmt
           : (props.yLabelFmt || props.labelFmt);
@@ -351,7 +354,9 @@ const chartConfig = computed<EChartsOption>(() => {
   }
 
   // Handle stack total labels
-  if (props.stackTotalLabel && isStacked.value) {
+  // In stacked100 mode every bar sums to 100% by definition, so the total
+  // label adds no information — skip it.
+  if (props.stackTotalLabel && isStacked.value && props.type !== 'stacked100') {
     const seriesArray = seriesData.value;
     // Build data with proper x-axis category values so no extra "0" category appears.
     // Each point is [xValue, 0] (vertical) or [0, xValue] (horizontal) — the zero
@@ -393,6 +398,10 @@ const chartConfig = computed<EChartsOption>(() => {
             }
           }
           if (total === 0) return '';
+          if (props.type === 'stacked100') {
+            const pctFmt = getFormatObjectFromString(props.percentFmt || 'pct1');
+            return formatValue(total, pctFmt);
+          }
           const labelFmt = props.yLabelFmt || props.labelFmt;
           const format = labelFmt
             ? getFormatObjectFromString(labelFmt)
