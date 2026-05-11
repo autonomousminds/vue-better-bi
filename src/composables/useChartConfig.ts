@@ -581,7 +581,7 @@ export function useChartConfig(
       swapXY,
       xType: xAxisType.value,
       totalSeriesCount: totalSeriesCount.value,
-      yCount: yCount.value,
+      yCount: seriesCount.value,
       y2Count: y2Count.value,
       xColumn: props.x,
       yColumn: props.y,
