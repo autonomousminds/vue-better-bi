@@ -63,7 +63,6 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLElement | null>(null);
 const chartInstance = shallowRef<ECharts | null>(null);
 const hovering = ref(false);
-const isFirstRender = ref(true);
 
 // Formatted ECharts config for debug display
 const formattedConfig = computed(() => {
@@ -97,9 +96,6 @@ function initChart(): void {
   if (chartInstance.value) {
     chartInstance.value.dispose();
   }
-
-  // Reset first render flag when creating a new chart instance
-  isFirstRender.value = true;
 
   const useRenderer = shouldUseSvg(containerRef.value) ? 'svg' : props.renderer;
   const chart = echarts.init(containerRef.value, 'light', {
@@ -152,10 +148,14 @@ function updateChart(): void {
     config.backgroundColor = 'transparent';
   }
 
-  // For first render, use notMerge to ensure clean initial state
-  // For subsequent updates, use notMerge: false to preserve toolbox internal
-  // state (required for restore/dataZoom to work)
-  const setOptionOpts = { notMerge: isFirstRender.value };
+  // Always use notMerge so the new option entirely replaces the previous one.
+  // Without this, ECharts merges component-by-component, which is wrong when
+  // the user reconfigures the chart (or the same Vue instance is reused for a
+  // different chart variant): stale series remain, axis type changes
+  // (e.g. 'time' → 'category') get ignored, removed legend entries linger.
+  // Toolbox interaction state (restore baseline, dataZoom range) is intentionally
+  // re-derived from each fresh option — config IS the source of truth.
+  const setOptionOpts = { notMerge: true };
 
   chartInstance.value.setOption(
     {
@@ -165,8 +165,6 @@ function updateChart(): void {
     },
     setOptionOpts
   );
-
-  isFirstRender.value = false;
 
   if (props.seriesColors) {
     applySeriesColors(chartInstance.value, props.seriesColors);

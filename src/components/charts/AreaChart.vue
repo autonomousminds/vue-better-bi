@@ -88,7 +88,7 @@ const { activeSeriesName, onChartInit } = useTooltipHoverHighlight();
 const {
   processedData: rawProcessedData,
   columnSummary,
-  xAxisType: _xAxisType,
+  xAxisType,
   baseConfig,
   formats,
   unitSummaries
@@ -167,8 +167,11 @@ const stepMap = {
 // spline so that all series share identical x-positions.  This lets us set
 // `smooth: false` in ECharts (straight lines between the dense points) which
 // guarantees adjacent stack boundaries align perfectly — no white gaps.
+// Skip for category x-axis: interpolating between discrete categories is
+// semantically wrong and pollutes the axis with one label per intermediate
+// point (e.g. string "2023-01" gets sub-divided into ISO timestamps).
 const usePreInterpolation = computed(() =>
-  isStacked.value && props.smooth && !props.step
+  isStacked.value && props.smooth && !props.step && xAxisType.value !== 'category'
 );
 
 // Build area series configuration
