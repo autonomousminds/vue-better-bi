@@ -269,11 +269,13 @@ export function formatTitle(
 ): string {
   let title = applyTitleTagReplacement(columnName, format);
 
-  // Convert snake_case and camelCase to Title Case
+  // Convert snake_case and camelCase to Title Case.
+  // Use Unicode-aware classes so accented letters (ž, ė, ų…) count as letters
+  // rather than word boundaries, which would mis-capitalize mid-word.
   title = title
     .replace(/_/g, ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+    .replace(/(\p{Ll})(\p{Lu})/gu, '$1 $2')
+    .replace(/(^|\s)(\p{L})/gu, (_, sep, c) => sep + c.toUpperCase());
 
   return title;
 }
