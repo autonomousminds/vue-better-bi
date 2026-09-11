@@ -207,6 +207,8 @@ export interface DataTableProps {
   serverMode?: boolean;
   /** Total row count on the server (drives page count in server mode) */
   serverTotalRows?: number;
+  /** A server page/search/sort is in flight: the table dims its rows and shows a spinner */
+  serverLoading?: boolean;
   /** Resolves the full dataset for CSV/Excel export when only a page is loaded */
   exportDataProvider?: () => Promise<Record<string, unknown>[]>;
 

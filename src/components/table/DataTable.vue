@@ -18,6 +18,7 @@ import type {
 import type { TableContext } from '../../symbols/injectionKeys';
 import { tableContextKey } from '../../symbols/injectionKeys';
 import { getColumnSummary, getFinalColumnOrder, aggregateColumn, autoConvertDateColumns, autoConvertNumericColumns } from '../../utils/tableUtils';
+import { searchNeedles, matchesSearch } from '../../utils/searchNeedles';
 import TableHeader from './TableHeader.vue';
 import TableRow from './TableRow.vue';
 import GroupRow from './GroupRow.vue';
@@ -49,6 +50,7 @@ const props = withDefaults(defineProps<DataTableProps>(), {
   showLinkCol: false,
   emptySet: 'info',
   emptyMessage: 'No data found',
+  serverLoading: false,
 });
 
 const emit = defineEmits<{
@@ -226,16 +228,10 @@ const searchFilteredData = computed(() => {
   if (isServerMode.value) return processedData.value;
   if (!debouncedSearchValue.value || !props.search) return processedData.value;
 
-  const query = debouncedSearchValue.value.toLowerCase();
+  const needles = searchNeedles(debouncedSearchValue.value);
   const visibleCols = effectiveColumns.value.map((c) => c.id);
 
-  return processedData.value.filter((row) =>
-    visibleCols.some((col) => {
-      const val = row[col];
-      if (val == null) return false;
-      return String(val).toLowerCase().includes(query);
-    })
-  );
+  return processedData.value.filter((row) => visibleCols.some((col) => matchesSearch(row[col], needles)));
 });
 
 // ─── Sorting ───────────────────────────────────────────────────────────
@@ -619,7 +615,8 @@ async function handleExportCsv() {
       <!-- Search -->
       <SearchBar v-if="search" v-model="searchValue" />
 
-      <!-- Scrollable table -->
+      <!-- Scrollable table; dimmed under a spinner while the server resolves a page -->
+      <div class="table-body" :class="{ 'is-loading': serverLoading }">
       <div class="scrollbox" :style="{ backgroundColor: backgroundColor || undefined }">
         <table>
         <TableHeader
@@ -753,9 +750,13 @@ async function handleExportCsv() {
         </tbody>
       </table>
     </div>
+      <div v-if="serverLoading" class="loading-overlay" role="status" aria-live="polite">
+        <span class="loading-spinner" aria-hidden="true"></span>Loading…
+      </div>
+      </div>
 
     <!-- No results -->
-    <div v-if="search && debouncedSearchValue && searchFilteredData.length === 0" class="no-results">
+    <div v-if="search && debouncedSearchValue && searchFilteredData.length === 0 && !serverLoading" class="no-results">
       No Results
     </div>
 
@@ -804,6 +805,7 @@ async function handleExportCsv() {
       </button>
       <div class="fullscreen-content">
         <ChartHeader :title="title" :title-icon="titleIcon" :subtitle="subtitle" />
+        <div class="table-body" :class="{ 'is-loading': serverLoading }">
         <div class="scrollbox" :style="{ backgroundColor: backgroundColor || undefined }">
           <table>
             <TableHeader
@@ -845,6 +847,10 @@ async function handleExportCsv() {
               />
             </tbody>
           </table>
+        </div>
+        <div v-if="serverLoading" class="loading-overlay" role="status" aria-live="polite">
+          <span class="loading-spinner" aria-hidden="true"></span>Loading…
+        </div>
         </div>
         <!-- Fullscreen pagination -->
         <div v-if="fullscreenIsPaginated && fullscreenPageCount > 1" class="fullscreen-pagination">
@@ -914,6 +920,49 @@ async function handleExportCsv() {
   width: 100%;
   overflow-x: auto;
   scrollbar-width: thin;
+}
+
+.table-body {
+  position: relative;
+}
+
+.table-body.is-loading .scrollbox {
+  opacity: 0.55;
+  transition: opacity 120ms ease-in;
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--table-muted-color, #6b7280);
+  font-size: 9.5pt;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.loading-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: table-spin 0.8s linear infinite;
+}
+
+@keyframes table-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+  }
 }
 
 table {

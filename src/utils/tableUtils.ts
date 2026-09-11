@@ -272,7 +272,8 @@ export function safeExtractColumn(
 ): ColumnSummaryItem {
   const found = columnSummary.find((d) => d.id === column.id);
   if (!found) {
-    console.warn(`Column "${column.id}" not found in column summary`);
+    // An empty result has no summary at all; only a real mismatch is worth a warning.
+    if (columnSummary.length > 0) console.warn(`Column "${column.id}" not found in column summary`);
     return {
       id: column.id,
       title: column.id,
