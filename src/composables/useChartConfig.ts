@@ -770,6 +770,24 @@ export function getSeriesConfig(
         ...baseConfig
       });
     }
+  } else if (series) {
+    // Series column with several y columns: one series per (series value, y column).
+    // Without this, rows sharing an x value were drawn on top of each other in one bar.
+    const distinctValues = getDistinctValues(data, series);
+
+    for (const [yCol, axisIndex] of yList) {
+      for (const seriesValue of distinctValues) {
+        const filteredData = data.filter((d) => d[series] === seriesValue);
+        seriesConfigs.push({
+          name: `${String(seriesValue ?? 'null')} - ${columnSummary[yCol]?.title || yCol}`,
+          data: fillMissingData
+            ? buildFilledSeriesData(allXValues, filteredData, yCol)
+            : buildSeriesData(filteredData, yCol),
+          yAxisIndex: axisIndex,
+          ...baseConfig
+        });
+      }
+    }
   } else if (yList.length > 1) {
     // Multiple y/y2 columns without series grouping
     for (const [yCol, axisIndex] of yList) {
